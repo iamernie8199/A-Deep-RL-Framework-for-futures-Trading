@@ -125,6 +125,10 @@ def dq2():
 
 
 def kalman(ts=None):
+    if ts is None:
+        ts = [None, ]
+    if ts[0] is None:
+        return
     kf = KalmanFilter(initial_state_mean=0,
                       initial_state_covariance=1,
                       transition_matrices=[1],
@@ -137,4 +141,5 @@ def kalman(ts=None):
 
 
 if __name__ == "__main__":
-    dq2()
+    #dq2()
+    df = pd.read_csv("data/clean/WTX&.csv")
