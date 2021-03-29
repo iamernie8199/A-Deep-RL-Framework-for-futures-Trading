@@ -143,3 +143,7 @@ def kalman(ts=None):
 if __name__ == "__main__":
     #dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
+    df['Date'] = pd.to_datetime(df['Date'])
+    df['kalman'] = kalman(df.Close)
+    hurst(df.Close)
+    df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
