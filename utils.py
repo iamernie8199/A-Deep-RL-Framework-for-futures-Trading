@@ -5,6 +5,10 @@ import datetime
 
 
 def settlement_day():
+    """
+    更新結算日列表
+    :return:
+    """
     df = pd.read_csv('data/txf_settlement.csv', delimiter=',')
     df['txf_settlement'] = pd.to_datetime(df['txf_settlement'])
     today = datetime.date.today()
@@ -26,3 +30,37 @@ def settlement_day():
 
         df.to_csv('data/txf_settlement.csv', index=False)
     return df
+
+
+def hurst(ts=None, lags=None):
+    """
+    USAGE:
+        Returns the Hurst Exponent of the time series
+        hurst < 0.5: mean revert
+        hurst = 0.5: random
+        hurst > 0.5: trend
+    PARAMETERS:
+        ts[,]   a time-series, with 100+ elements
+                ( or [ None, ] that produces a demo run )
+    RETURNS:
+        float - a Hurst Exponent approximation
+    """
+    if ts is None:
+        ts = [None, ]
+    if lags is None:
+        lags = [2, 100]
+    if ts[0] is None:
+        return
+    if isinstance(ts, pd.Series):
+        ts = ts.dropna().to_list()
+
+    too_short_list = lags[1] + 1 - len(ts)
+    if 0 < too_short_list:  # IF NOT:
+        # 序列長度不足則以第一筆補滿
+        ts = too_short_list * ts[:1] + ts  # PRE-PEND SUFFICIENT NUMBER of [ts[0],]-as-list REPLICAS TO THE LIST-HEAD
+    # Create the range of lag values
+    lags = range(lags[0], lags[1])
+    # Calculate the array of the variances of the lagged differences
+    tau = [np.sqrt(np.std(np.subtract(ts[lag:], ts[:-lag]))) for lag in lags]
+    # Return the Hurst exponent from the polyfit output ( a linear fit to estimate the Hurst Exponent
+    return 2.0 * np.polyfit(np.log(lags), np.log(tau), 1)[0]
