@@ -1,5 +1,7 @@
 import datetime
 import json
+from fractions import Fraction
+from glob import glob
 
 import numpy as np
 import pandas as pd
@@ -66,3 +68,50 @@ def hurst(ts=None, lags=None):
     tau = [np.sqrt(np.std(np.subtract(ts[lag:], ts[:-lag]))) for lag in lags]
     # Return the Hurst exponent from the polyfit output ( a linear fit to estimate the Hurst Exponent
     return 2.0 * np.polyfit(np.log(lags), np.log(tau), 1)[0]
+
+
+def frac2float(x):
+    """
+    covert something like '387 2/4' to float
+    :param x: fractions(str)
+    :return: float
+    """
+    if len(x.split(' ')) == 2:
+        return float(x.split(' ')[0]) + float(Fraction(x.split(' ')[-1]))
+    elif len(x.split(' ')) == 3:
+        return float(x.split(' ')[0]) + float(Fraction(x.split(' ')[-2])) * float(Fraction(x.split(' ')[-1]))
+    else:
+        return float(x.split(' ')[0])
+
+
+def dq2():
+    file = glob('factor/dirty/*.csv')
+    for f in file:
+        # UTF-8會亂碼
+        tmp = pd.read_csv(f, skiprows=[0], encoding='big5')
+        tmp = tmp.dropna(axis='columns')
+        # 調整日期格式
+        tmp['日期'] = tmp['日期'].apply(lambda x: str(x // 10000) + '/' + str(x % 10000 // 100) + '/' + str(x % 100))
+        # 與Yahoo統一欄位名稱
+        tmp = tmp.rename(columns={"日期": "Date",
+                                  "開盤價": "Open",
+                                  "最高價": "High",
+                                  "最低價": "Low",
+                                  "收盤價": "Close",
+                                  "成交量": "Volume",
+                                  "未平倉量": "OI"})
+        filename = f.split('\\')[-1].split('(')[-2].replace(')', '.csv')
+        # 捨棄全0欄位
+        tmp = tmp.loc[:, (tmp != 0).any(axis=0)]
+
+        try:
+            tmp = tmp.astype({'Open': 'float',
+                              'High': 'float',
+                              'Low': 'float',
+                              'Close': 'float'})
+        except:
+            tmp['Open'] = tmp['Open'].apply(lambda x: frac2float(x))
+            tmp['High'] = tmp['High'].apply(lambda x: frac2float(x))
+            tmp['Low'] = tmp['Low'].apply(lambda x: frac2float(x))
+            tmp['Close'] = tmp['Close'].apply(lambda x: frac2float(x))
+        tmp.to_csv(f"factor/clean/{filename}", index=False)
