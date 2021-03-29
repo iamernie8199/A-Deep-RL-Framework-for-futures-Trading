@@ -133,7 +133,7 @@ def kalman(ts=None):
                       transition_covariance=.01)
     state_means, _ = kf.filter(ts)
     state_means = pd.Series(state_means.flatten(), index=ts.index)
-    return kf
+    return state_means
 
 
 if __name__ == "__main__":
