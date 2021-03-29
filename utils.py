@@ -1,12 +1,13 @@
 import datetime
 import json
+import os
 from fractions import Fraction
 from glob import glob
-import os
 
 import numpy as np
 import pandas as pd
 import requests
+from pykalman import KalmanFilter
 
 
 def settlement_day():
@@ -121,6 +122,18 @@ def dq2():
         if not os.path.exists('data/clean/'):
             os.makedirs('data/clean/')
         tmp.to_csv(f"data/clean/{filename}", index=False)
+
+
+def kalman(ts=None):
+    kf = KalmanFilter(initial_state_mean=0,
+                      initial_state_covariance=1,
+                      transition_matrices=[1],
+                      observation_matrices=[1],
+                      observation_covariance=1,
+                      transition_covariance=.01)
+    state_means, _ = kf.filter(ts)
+    state_means = pd.Series(state_means.flatten(), index=ts.index)
+    return kf
 
 
 if __name__ == "__main__":
