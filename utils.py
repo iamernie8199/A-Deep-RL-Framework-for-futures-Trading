@@ -2,6 +2,7 @@ import datetime
 import json
 from fractions import Fraction
 from glob import glob
+import os
 
 import numpy as np
 import pandas as pd
@@ -85,7 +86,7 @@ def frac2float(x):
 
 
 def dq2():
-    file = glob('factor/dirty/*.csv')
+    file = glob('data/raw/*.csv')
     for f in file:
         # UTF-8會亂碼
         tmp = pd.read_csv(f, skiprows=[0], encoding='big5')
@@ -99,7 +100,10 @@ def dq2():
                                   "最低價": "Low",
                                   "收盤價": "Close",
                                   "成交量": "Volume",
-                                  "未平倉量": "OI"})
+                                  "未平倉量": "OI",
+                                  "上漲家數": "advancing",
+                                  "下跌家數": "declining",
+                                  "成交金額": "trade_value"})
         filename = f.split('\\')[-1].split('(')[-2].replace(')', '.csv')
         # 捨棄全0欄位
         tmp = tmp.loc[:, (tmp != 0).any(axis=0)]
@@ -114,4 +118,10 @@ def dq2():
             tmp['High'] = tmp['High'].apply(lambda x: frac2float(x))
             tmp['Low'] = tmp['Low'].apply(lambda x: frac2float(x))
             tmp['Close'] = tmp['Close'].apply(lambda x: frac2float(x))
-        tmp.to_csv(f"factor/clean/{filename}", index=False)
+        if not os.path.exists('data/clean/'):
+            os.makedirs('data/clean/')
+        tmp.to_csv(f"data/clean/{filename}", index=False)
+
+
+if __name__ == "__main__":
+    dq2()
