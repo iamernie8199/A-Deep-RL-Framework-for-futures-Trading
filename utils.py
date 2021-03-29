@@ -1,7 +1,9 @@
+import datetime
+import json
+
+import numpy as np
 import pandas as pd
 import requests
-import json
-import datetime
 
 
 def settlement_day():
