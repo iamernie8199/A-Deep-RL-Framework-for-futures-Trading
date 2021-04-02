@@ -141,9 +141,21 @@ def kalman(ts=None):
 
 
 if __name__ == "__main__":
-    #dq2()
+    # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
     df['kalman'] = kalman(df.Close)
-    hurst(df.Close)
+    # print(hurst(df.Close))
+    # 2Q
     df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
+    # 3Q
+    df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
+    # 4Q
+    df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
+    df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
+    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
+    # normalized ohlc
+    df['norm_o'] = np.log(df['Open']) - np.log(df['Close'].shift(1))
+    df['norm_h'] = np.log(df['High']) - np.log(df['Open'])
+    df['norm_l'] = np.log(df['Low']) - np.log(df['Open'])
+    df['norm_c'] = np.log(df['Close']) - np.log(df['Open'])
