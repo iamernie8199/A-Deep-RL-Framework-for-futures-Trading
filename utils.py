@@ -10,6 +10,10 @@ import requests
 from pykalman import KalmanFilter
 from scipy.signal.signaltools import wiener
 
+import seaborn as sns
+import matplotlib.pyplot as plt
+import mplfinance as mpf
+
 def settlement_day():
     """
     更新結算日列表
@@ -47,16 +51,14 @@ def hurst(ts=None, lags=None):
         hurst > 0.5: trend
     PARAMETERS:
         ts[,]   a time-series, with 100+ elements
-                ( or [ None, ] that produces a demo run )
     RETURNS:
         float - a Hurst Exponent approximation
     """
     if ts is None:
         ts = [None, ]
     if lags is None:
-        lags = [2, 100]
-    if ts[0] is None:
-        return
+        lags = [2, 80]
+
     if isinstance(ts, pd.Series):
         ts = ts.dropna().to_list()
 
@@ -141,23 +143,40 @@ def kalman(ts=None):
 
 
 if __name__ == "__main__":
+    settlement = pd.read_csv("data/txf_settlement.csv")
+    settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
+    settlement = settlement.set_index(settlement['txf_settlement'])
     # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
-    df['kalman'] = kalman(df.Close)
-    # print(hurst(df.Close))
-    # 2Q
-    df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
-    # 3Q
-    df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
-    # 4Q
-    df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
+    # candlestick feature
+    df['range'] = df['High']-df['Low']
+    df['body'] = np.abs(df['Open']-df['Close'])/df['range']
+    df['upper_shadow'] = (df['High']-df[['Open', 'Close']].max(axis=1)) / df['range']
+    df['lower_shadow'] = (df[['Open', 'Close']].min(axis=1)-df['Low']) / df['range']
+
     df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
-    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
+
     # normalized ohlc
     df['norm_o'] = np.log(df['Open']) - np.log(df['Close'].shift(1))
     df['norm_h'] = np.log(df['High']) - np.log(df['Open'])
     df['norm_l'] = np.log(df['Low']) - np.log(df['Open'])
     df['norm_c'] = np.log(df['Close']) - np.log(df['Open'])
-    # wiener
-    df['wiener_log_rtn'] = wiener(df['log_rtn'])
+    # kf
+    df['kalman'] = kalman(df.Close)
+    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
+    # hurst
+    # print(hurst(df.Close))
+    # 2Q/3Q/4Q
+    df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
+    df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
+    df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
+    # wf
+    df = df[1:]
+    df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
+    # filter compare
+    df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
+    df.plot(x='Date', y='Volume')
+
+    df = df.drop(columns=['range', 'High', 'Low'])
+    df = df[df[df.Volume == 0].index.values[-1]:-1].set_index(df['Date'])
