@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import requests
 from pykalman import KalmanFilter
-
+from scipy.signal.signaltools import wiener
 
 def settlement_day():
     """
@@ -159,3 +159,5 @@ if __name__ == "__main__":
     df['norm_h'] = np.log(df['High']) - np.log(df['Open'])
     df['norm_l'] = np.log(df['Low']) - np.log(df['Open'])
     df['norm_c'] = np.log(df['Close']) - np.log(df['Open'])
+    # wiener
+    df['wiener_log_rtn'] = wiener(df['log_rtn'])
