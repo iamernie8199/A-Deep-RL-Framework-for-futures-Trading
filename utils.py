@@ -142,6 +142,19 @@ def kalman(ts=None):
     return state_means
 
 
+def expiration_cal(x):
+    remain = (settlement[x.strftime('%Y-%m')].index - x)[0]
+    if remain >= pd.Timedelta("0 days"):
+        return remain
+    else:
+        remain = (settlement[(x+pd.Timedelta(30, unit="d")).strftime('%Y-%m')].index - x)[0]
+        return remain
+
+
+def settlement_cal(d):
+    d['until_expiration'] = d.Date.apply(lambda x: expiration_cal(x))
+    return d
+
 if __name__ == "__main__":
     settlement = pd.read_csv("data/txf_settlement.csv")
     settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
@@ -169,14 +182,15 @@ if __name__ == "__main__":
     # print(hurst(df.Close))
     # 2Q/3Q/4Q
     df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
-    df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
-    df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
+    #df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
+    #df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
     # wf
     df = df[1:]
     df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
     # filter compare
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
     df.plot(x='Date', y='Volume')
-
-    df = df.drop(columns=['range', 'High', 'Low'])
-    df = df[df[df.Volume == 0].index.values[-1]:-1].set_index(df['Date'])
+    df = df[df[df.Volume == 0].index.values[-1]:-1].reset_index(drop=True)
+    df = df.drop(columns=['range', 'High', 'Low']).set_index(df['Date'])['1998/09':]
+    df = settlement_cal(df)
+    #df['until_expiration'] = df.Date.apply(lambda x: expiration_cal(x))
