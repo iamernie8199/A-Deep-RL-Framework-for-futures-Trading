@@ -10,9 +10,14 @@ import requests
 from pykalman import KalmanFilter
 from scipy.signal.signaltools import wiener
 
-import seaborn as sns
-import matplotlib.pyplot as plt
-import mplfinance as mpf
+
+class Futures():
+    def __init__(self,
+                 min_movement_point=1,
+                 big_point_value=200):
+        self.min_movement_point = min_movement_point
+        self.big_point_value = big_point_value
+
 
 def settlement_day():
     """
@@ -147,13 +152,15 @@ def expiration_cal(x):
     if remain >= pd.Timedelta("0 days"):
         return remain
     else:
-        remain = (settlement[(x+pd.Timedelta(30, unit="d")).strftime('%Y-%m')].index - x)[0]
+        remain = (settlement[(x + pd.Timedelta(30, unit="d")).strftime('%Y-%m')].index - x)[0]
         return remain
 
 
 def settlement_cal(d):
     d['until_expiration'] = d.Date.apply(lambda x: expiration_cal(x))
+    d['until_expiration'] = d['until_expiration'].apply(lambda x: x.days)
     return d
+
 
 if __name__ == "__main__":
     settlement = pd.read_csv("data/txf_settlement.csv")
@@ -163,10 +170,10 @@ if __name__ == "__main__":
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
     # candlestick feature
-    df['range'] = df['High']-df['Low']
-    df['body'] = np.abs(df['Open']-df['Close'])/df['range']
-    df['upper_shadow'] = (df['High']-df[['Open', 'Close']].max(axis=1)) / df['range']
-    df['lower_shadow'] = (df[['Open', 'Close']].min(axis=1)-df['Low']) / df['range']
+    df['range'] = df['High'] - df['Low']
+    df['body'] = np.abs(df['Open'] - df['Close']) / df['range']
+    df['upper_shadow'] = (df['High'] - df[['Open', 'Close']].max(axis=1)) / df['range']
+    df['lower_shadow'] = (df[['Open', 'Close']].min(axis=1) - df['Low']) / df['range']
 
     df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
 
@@ -182,8 +189,8 @@ if __name__ == "__main__":
     # print(hurst(df.Close))
     # 2Q/3Q/4Q
     df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
-    #df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
-    #df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
+    # df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
+    # df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
     # wf
     df = df[1:]
     df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
@@ -191,6 +198,6 @@ if __name__ == "__main__":
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
     df.plot(x='Date', y='Volume')
     df = df[df[df.Volume == 0].index.values[-1]:-1].reset_index(drop=True)
-    df = df.drop(columns=['range', 'High', 'Low']).set_index(df['Date'])['1998/09':]
+    df = df.drop(columns=['range']).set_index(df['Date'])['1998/09':]
     df = settlement_cal(df)
-    #df['until_expiration'] = df.Date.apply(lambda x: expiration_cal(x))
+    # df['until_expiration'] = df.Date.apply(lambda x: expiration_cal(x))
