@@ -2,3 +2,6 @@ numpy~=1.16.2
 pandas~=0.24.2
 requests~=2.21.0
 pykalman~=0.9.5
+gym~=0.18.0
+matplotlib~=3.0.3
+scipy~=1.2.1
