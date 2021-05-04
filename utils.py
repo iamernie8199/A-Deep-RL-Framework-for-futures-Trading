@@ -169,6 +169,11 @@ if __name__ == "__main__":
     # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
+
+    # volume degree change(minmax scale)
+    # df['vol_deg_change'] = df['Volume'].diff(1).apply(lambda x: np.arctan2(x, 100) * 180 / np.pi)
+    df['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+
     # candlestick feature
     df['range'] = df['High'] - df['Low']
     df['body'] = np.abs(df['Open'] - df['Close']) / df['range']
