@@ -172,6 +172,17 @@ def vol_feature(d):
     return d
 
 
+def oi_feature(d):
+    """
+    same as vol_feature, for futures
+    :param d: df
+    """
+    d['oi_deg_change'] = d['OI'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    d['oi_percentile'] = d['OI'].rolling(len(df), min_periods=1).apply(
+        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
+    return d
+
+
 def candle(d):
     """
     add candlestick feature to df
@@ -201,7 +212,6 @@ def norm_ohlc(d):
     return d
 
 
-
 if __name__ == "__main__":
     settlement = pd.read_csv("data/txf_settlement.csv")
     settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
@@ -211,6 +221,7 @@ if __name__ == "__main__":
     df['Date'] = pd.to_datetime(df['Date'])
 
     df = vol_feature(df)  # volume feature
+    df = oi_feature(df)  # oi feature
     df = candle(df)  # candlestick feature
     df = norm_ohlc(df)  # normalized ohlc
 
