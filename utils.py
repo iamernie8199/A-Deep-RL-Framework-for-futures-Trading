@@ -152,7 +152,7 @@ def expiration_cal(x):
     if remain >= pd.Timedelta("0 days"):
         return remain
     else:
-        remain = (settlement[(x + pd.Timedelta(30, unit="d")).strftime('%Y-%m')].index - x)[0]
+        remain = (settlement[(x + pd.Timedelta(15, unit="d")).strftime('%Y-%m')].index - x)[0]
         return remain
 
 
@@ -172,7 +172,9 @@ if __name__ == "__main__":
 
     # volume degree change(minmax scale)
     # df['vol_deg_change'] = df['Volume'].diff(1).apply(lambda x: np.arctan2(x, 100) * 180 / np.pi)
-    df['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    df['vol_deg_change'] = df['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    df['vol_percentile'] = df['Volume'].rolling(len(df), min_periods=1).apply(
+        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
 
     # candlestick feature
     df['range'] = df['High'] - df['Low']
