@@ -48,14 +48,13 @@ def settlement_day():
 
 def hurst(ts=None, lags=None):
     """
-    USAGE:
-        Returns the Hurst Exponent of the time series
-        hurst < 0.5: mean revert
-        hurst = 0.5: random
-        hurst > 0.5: trend
-    PARAMETERS:
+    Returns the Hurst Exponent of the time series
+    hurst < 0.5: mean revert
+    hurst = 0.5: random
+    hurst > 0.5: trend
+    :param:
         ts[,]   a time-series, with 100+ elements
-    RETURNS:
+    :return:
         float - a Hurst Exponent approximation
     """
     if ts is None:
@@ -190,11 +189,17 @@ def candle(d):
 
 
 def norm_ohlc(d):
-    d['norm_o'] = np.log(d['Open']) - np.log(d['Close'].shift(1))
-    d['norm_h'] = np.log(d['High']) - np.log(d['Open'])
-    d['norm_l'] = np.log(d['Low']) - np.log(d['Open'])
-    d['norm_c'] = np.log(d['Close']) - np.log(d['Open'])
+    """
+    normalize ohlc
+    :param d: df
+    """
+    tmp_o = np.log(d['Open'])
+    d['norm_o'] = tmp_o - np.log(d['Close'].shift(1))
+    d['norm_h'] = np.log(d['High']) - tmp_o
+    d['norm_l'] = np.log(d['Low']) - tmp_o
+    d['norm_c'] = np.log(d['Close']) - tmp_o
     return d
+
 
 
 if __name__ == "__main__":
@@ -209,9 +214,6 @@ if __name__ == "__main__":
     df = candle(df)  # candlestick feature
     df = norm_ohlc(df)  # normalized ohlc
 
-    # df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
-    df['log_rtn'] = np.log(df['Close']).diff(1)
-
     # hurst
     # print(hurst(df.Close))
     # 2Q/3Q/4Q
@@ -219,11 +221,11 @@ if __name__ == "__main__":
     # df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
     # df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
 
+    df['log_rtn'] = np.log(df['Close']).diff(1)
     # kalman filter
-    df['kalman'] = kalman(df.Close)
-    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
-
+    df['kalman_log_rtn1'] = np.log(kalman(df.Close)).diff(1)
     df = df[1:]  # df[0] has nan
+    df['kalman_log_rtn2'] = kalman(df.log_rtn.reset_index(drop=True))
     # wiener filter
     df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
     """
@@ -233,7 +235,6 @@ if __name__ == "__main__":
     """
     df = df[df[df.Volume == 0].index.values[-1]:-1].reset_index(drop=True)
     df = df.drop(columns=['range']).set_index(df['Date'])['1998/09':]
-
     # settlement
     df = settlement_cal(df)
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45)  # minmax scale, max=1.5 month
