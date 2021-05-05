@@ -11,7 +11,7 @@ from pykalman import KalmanFilter
 from scipy.signal.signaltools import wiener
 
 
-class Futures():
+class Futures:
     def __init__(self,
                  min_movement_point=1,
                  big_point_value=200):
@@ -24,14 +24,13 @@ def settlement_day():
     更新結算日列表
     :return:
     """
-    df = pd.read_csv('data/txf_settlement.csv', delimiter=',')
-    df['txf_settlement'] = pd.to_datetime(df['txf_settlement'])
+    settle = pd.read_csv('data/txf_settlement.csv', delimiter=',')
+    settle['txf_settlement'] = pd.to_datetime(settle['txf_settlement'])
     today = datetime.date.today()
-    if (df['txf_settlement'].tail(1) < today).values[0]:
-        df['txf_settlement'] = df['txf_settlement'].apply(lambda x: datetime.datetime.strftime(x, "%Y/%m/%d"))
-        r = requests.get(
-            f"https://www.yuantafutures.com.tw/api/TradeCal01?format=json&select01=%E5%8F%B0%E7%81%A3%E6%9C%9F%E4%BA%A4%E6%89%80TAIFEX&select02=%E6%9C%9F%E8%B2%A8&y={today.year}&o=TE"
-        )
+    if (settle['txf_settlement'].tail(1) < today).values[0]:
+        settle['txf_settlement'] = settle['txf_settlement'].apply(lambda x: datetime.datetime.strftime(x, "%Y/%m/%d"))
+        url = f"https://www.yuantafutures.com.tw/api/TradeCal01?format=json&select01=台灣期交所TAIFEX&select02=期貨&y={today.year}&o=TE"
+        r = requests.get(url)
         tmp_json = json.loads(r.text)
         for tmp in tmp_json['result01']:
             # utc+0
@@ -40,11 +39,11 @@ def settlement_day():
             # utc+8
             d += datetime.timedelta(days=1)
             d = d.strftime("%Y/%m/%d")
-            if d not in df['txf_settlement'].tolist():
-                df = df.append({'txf_settlement': d}, ignore_index=True)
+            if d not in settle['txf_settlement'].tolist():
+                settle = settle.append({'txf_settlement': d}, ignore_index=True)
 
-        df.to_csv('data/txf_settlement.csv', index=False)
-    return df
+        settle.to_csv('data/txf_settlement.csv', index=False)
+    return settle
 
 
 def hurst(ts=None, lags=None):
@@ -152,13 +151,49 @@ def expiration_cal(x):
     if remain >= pd.Timedelta("0 days"):
         return remain
     else:
-        remain = (settlement[(x + pd.Timedelta(15, unit="d")).strftime('%Y-%m')].index - x)[0]
-        return remain
+        return (settlement[(x + pd.Timedelta(15, unit="d")).strftime('%Y-%m')].index - x)[0]
 
 
 def settlement_cal(d):
     d['until_expiration'] = d.Date.apply(lambda x: expiration_cal(x))
     d['until_expiration'] = d['until_expiration'].apply(lambda x: x.days)
+    return d
+
+
+def vol_feature(d):
+    """
+    add 2 volume feature to df
+    vol_deg_change: degree change in minmax scale, origin value belong to [-90, 90]
+    vol_percentile: volume percentile
+    :param d: df
+    """
+    d['vol_deg_change'] = d['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    d['vol_percentile'] = d['Volume'].rolling(len(df), min_periods=1).apply(
+        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
+    return d
+
+
+def candle(d):
+    """
+    add candlestick feature to df
+    body: abs(o - c)
+    upper_shadow: h - max(o, c)
+    lower_shadow: min(o, c) - l
+    divide by range in order to make all candlestick in same scale
+    :param d: df
+    """
+    d['range'] = d['High'] - d['Low']
+    d['body'] = np.abs(d['Open'] - d['Close']) / d['range']
+    d['upper_shadow'] = (d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']
+    d['lower_shadow'] = (d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']
+    return d
+
+
+def norm_ohlc(d):
+    d['norm_o'] = np.log(d['Open']) - np.log(d['Close'].shift(1))
+    d['norm_h'] = np.log(d['High']) - np.log(d['Open'])
+    d['norm_l'] = np.log(d['Low']) - np.log(d['Open'])
+    d['norm_c'] = np.log(d['Close']) - np.log(d['Open'])
     return d
 
 
@@ -170,41 +205,35 @@ if __name__ == "__main__":
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
 
-    # volume degree change(minmax scale)
-    # df['vol_deg_change'] = df['Volume'].diff(1).apply(lambda x: np.arctan2(x, 100) * 180 / np.pi)
-    df['vol_deg_change'] = df['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
-    df['vol_percentile'] = df['Volume'].rolling(len(df), min_periods=1).apply(
-        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
+    df = vol_feature(df)  # volume feature
+    df = candle(df)  # candlestick feature
+    df = norm_ohlc(df)  # normalized ohlc
 
-    # candlestick feature
-    df['range'] = df['High'] - df['Low']
-    df['body'] = np.abs(df['Open'] - df['Close']) / df['range']
-    df['upper_shadow'] = (df['High'] - df[['Open', 'Close']].max(axis=1)) / df['range']
-    df['lower_shadow'] = (df[['Open', 'Close']].min(axis=1) - df['Low']) / df['range']
+    # df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
+    df['log_rtn'] = np.log(df['Close']).diff(1)
 
-    df['log_rtn'] = np.log(df['Close']) - np.log(df['Close'].shift(1))
-
-    # normalized ohlc
-    df['norm_o'] = np.log(df['Open']) - np.log(df['Close'].shift(1))
-    df['norm_h'] = np.log(df['High']) - np.log(df['Open'])
-    df['norm_l'] = np.log(df['Low']) - np.log(df['Open'])
-    df['norm_c'] = np.log(df['Close']) - np.log(df['Open'])
-    # kf
-    df['kalman'] = kalman(df.Close)
-    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
     # hurst
     # print(hurst(df.Close))
     # 2Q/3Q/4Q
     df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
     # df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
     # df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
-    # wf
-    df = df[1:]
+
+    # kalman filter
+    df['kalman'] = kalman(df.Close)
+    df['kalman_log_rtn'] = np.log(df['kalman']) - np.log(df['kalman'].shift(1))
+
+    df = df[1:]  # df[0] has nan
+    # wiener filter
     df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
+    """
     # filter compare
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
     df.plot(x='Date', y='Volume')
+    """
     df = df[df[df.Volume == 0].index.values[-1]:-1].reset_index(drop=True)
     df = df.drop(columns=['range']).set_index(df['Date'])['1998/09':]
+
+    # settlement
     df = settlement_cal(df)
-    # df['until_expiration'] = df.Date.apply(lambda x: expiration_cal(x))
+    df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45)  # minmax scale, max=1.5 month
