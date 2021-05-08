@@ -1,9 +1,9 @@
 import gym
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from gym.spaces import Discrete, Box
-
-from stable_baselines3.common import logger
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 
 class TradingEnvLong(gym.Env):
@@ -30,19 +30,19 @@ class TradingEnvLong(gym.Env):
         self.futures = futures
         self.cost = self.futures.min_movement_point * self.futures.big_point_value * 3
         self.window_size = window_size
-        self.prices = self.data[['Date', 'Open', 'High', 'Low', 'Close']]
+        self.prices = self.data[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
         self.max_position = max_position
         self.trades_list_col = ['action', 'date', 'price', 'position', 'profit', 'equity', 'drawdown']
 
         # spaces
-        self.action = {
-            -1: 'sell',
+        self.action_describe = {
             0: 'hold',
             1: 'long',
+            2: 'sell'
         }
-        self.action_space = Discrete(len(self.action))
-        # observation_space 值郁為[0,1]
-        self.observation = self.data.drop(columns=[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']])
+        self.action_space = Discrete(len(self.action_describe))
+        # observation_space 值域為[0,1]
+        self.observation = self.data.drop(columns=[['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']])
         self.observation_space = Box(low=0, high=1, shape=(self.observation.shape[1],))
         self.done = False
 
@@ -51,9 +51,16 @@ class TradingEnvLong(gym.Env):
         self.position = 0
         self.points = 0
         self.equity = self.init_equity
+        self.equity_tmp = self.init_equity
+        self.equity_h = self.init_equity
+        self._entryprice = None
+        self.episode = 0
+        self.drawdown = self.equity_h - self.equity_tmp
         self.trades_list = pd.DataFrame(columns=self.trades_list_col)
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
+        self.equity_memory = pd.DataFrame(columns=['date', 'equity'])
+        self.rewards_memory = pd.DataFrame(columns=['date', 'rewards'])
 
     def reset(self):
         self.equity = self.init_equity
@@ -61,8 +68,17 @@ class TradingEnvLong(gym.Env):
         self.position = 0
         self.current_idx = 0
         self.points = 0
+        self.equity_tmp = self.init_equity
+        self.equity_h = self.init_equity
+        self._entryprice = None
+        self.drawdown = self.equity_h - self.equity_tmp
         self.trades_list = pd.DataFrame(columns=self.trades_list_col)
         self.done = False
+        self._entryprice = None
+        self.episode += 1
+        self.actions_memory = pd.DataFrame(columns=['date', 'action'])
+        self.equity_memory = pd.DataFrame(columns=['date', 'equity'])
+        self.rewards_memory = pd.DataFrame(columns=['date', 'rewards'])
         return np.append(self.observation.iloc[0].values, 0)
 
     def commission_cost(self, contracts):
@@ -78,6 +94,7 @@ class TradingEnvLong(gym.Env):
             self.position += contracts
             self.commission_cost(contracts)
             self.points += price * contracts
+            self._entryprice = price
 
     def _sell(self, price, contracts):
         if self.position > 0:
@@ -93,25 +110,68 @@ class TradingEnvLong(gym.Env):
         pass
 
     def step(self, actions):
-        self.done = self.current_idx >= len(self.df.index.unique())-1
-
-        if self.df['until_expiration'].iloc[self.current_idx] == 0:
-            action_str = 'hold' if not self.position else 'settlement'
-            if self.position > 0:
-                self._sell(self.prices['Close'].iloc[self.current_idx], self.position)
+        self.done = self.current_idx >= len(self.df.index.unique()) - 2
+        if self.done:
+            self._make_plot()
+            return np.append(self.observation.iloc[self.current_idx].values,
+                             self.position), self.scale_reward(), self.done, {}
         else:
-            if actions == 1:
-                action_str = 'buy_next' if self.position < self.max_position else 'hold'
-                self._long(self.prices['Open'].iloc[self.current_idx + 1], 1)
-            elif actions == -1:
-                action_str = 'sell_next'
-                self._sell(self.prices['Open'].iloc[self.current_idx + 1], 1)
+            if self.df['until_expiration'].iloc[self.current_idx] == 0:
+                action_str = 'hold' if not self.position else 'settlement'
+                if self.position > 0:
+                    self._sell(self.prices['Close'].iloc[self.current_idx], self.position)
             else:
-                action_str = 'hold'
+                if actions == 1:
+                    action_str = 'buy_next' if self.position < self.max_position else 'hold'
+                    self._long(self.prices['Open'].iloc[self.current_idx + 1], 1)
+                elif actions == 2:
+                    action_str = 'sell_next'
+                    self._sell(self.prices['Open'].iloc[self.current_idx + 1], 1)
+                else:
+                    action_str = 'hold'
+            # equity new high
+            if self.equity > self.equity_h:
+                self.equity_h = self.equity
 
-        self.actions_memory.append({'date': self.prices['Date'].iloc[self.current_idx],
-                                    'action': action_str})
-        self.current_idx += 1
-        self.data = self.df.loc[self.current_idx, :]
+            if self.position > 0:
+                self.equity_tmp += (self.prices['Low'].iloc[
+                                        self.current_idx] - self._entryprice) * self.futures.big_point_value
+            else:
+                self.equity_tmp = self.equity
+            dd = self.equity_h - self.equity_tmp
+            # MDD new high
+            if dd > self.drawdown:
+                self.drawdown = dd
 
-        return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, done, {}
+            self.actions_memory.append(
+                {'date': self.prices['Date'].iloc[self.current_idx],
+                 'action': action_str})
+            self.equity_memory.append(
+                {'date': self.prices['Date'].iloc[self.current_idx],
+                 'equity': self.equity_tmp})
+            self.rewards_memory.append(
+                {'date': self.prices['Date'].iloc[self.current_idx],
+                 'rewards': self.scale_reward()})
+            self.current_idx += 1
+            self.data = self.df.loc[self.current_idx, :]
+            self.reward = self.equity / self.drawdown  # reward = return / MDD
+
+            return np.append(self.observation.iloc[self.current_idx].values,
+                             self.position), self.scale_reward(), self.done, {}
+
+    def scale_reward(self):
+        scaled = self.reward / 50
+        if scaled < 0:
+            return 0
+        else:
+            return scaled
+
+    def _make_plot(self):
+        plt.plot(self.equity_memory, 'r')
+        plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
+        plt.close()
+
+    def get_sb_env(self):
+        e = DummyVecEnv([lambda: self])
+        obs = e.reset()
+        return e, obs
