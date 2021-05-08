@@ -212,6 +212,20 @@ def norm_ohlc(d):
     return d
 
 
+def basis(d):
+    """
+    add futures basis feature to df
+    :param d: df
+    :return: basis feature
+    """
+    d = d.set_index(d['Date'])
+    taiex = pd.read_csv('data/clean/#001.csv')
+    taiex['Date'] = pd.to_datetime(taiex['Date'])
+    taiex = taiex.set_index(taiex['Date'])
+    d['basis'] = (taiex['Close'] - d['Close']).fillna(method='ffill')
+    return d['basis'].reset_index(drop=True)
+
+
 if __name__ == "__main__":
     settlement = pd.read_csv("data/txf_settlement.csv")
     settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
@@ -219,7 +233,7 @@ if __name__ == "__main__":
     # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
-
+    df['basis'] = basis(df)
     df = vol_feature(df)  # volume feature
     df = oi_feature(df)  # oi feature
     df = candle(df)  # candlestick feature
@@ -244,7 +258,7 @@ if __name__ == "__main__":
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
     df.plot(x='Date', y='Volume')
     """
-    df = df[df[df.Volume == 0].index.values[-1]:-1].reset_index(drop=True)
+    df = df[df[df.Volume == 0].index.values[-1]:].reset_index(drop=True)
     df = df.drop(columns=['range']).set_index(df['Date'])['1998/09':]
     # settlement
     df = settlement_cal(df)
