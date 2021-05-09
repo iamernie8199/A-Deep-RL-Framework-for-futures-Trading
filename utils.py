@@ -1,6 +1,8 @@
 import datetime
 import json
 import os
+# Disable the warnings
+import warnings
 from fractions import Fraction
 from glob import glob
 
@@ -9,6 +11,8 @@ import pandas as pd
 import requests
 from pykalman import KalmanFilter
 from scipy.signal.signaltools import wiener
+
+warnings.filterwarnings('ignore')
 
 
 class Futures:
@@ -193,9 +197,9 @@ def candle(d):
     :param d: df
     """
     d['range'] = d['High'] - d['Low']
-    d['body'] = np.abs(d['Open'] - d['Close']) / d['range']
-    d['upper_shadow'] = (d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']
-    d['lower_shadow'] = (d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']
+    d['body'] = (np.abs(d['Open'] - d['Close']) / d['range']).fillna(1)
+    d['upper_shadow'] = ((d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']).fillna(0)
+    d['lower_shadow'] = ((d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']).fillna(0)
     return d
 
 
@@ -222,7 +226,10 @@ def basis(d):
     taiex = pd.read_csv('data/clean/#001.csv')
     taiex['Date'] = pd.to_datetime(taiex['Date'])
     taiex = taiex.set_index(taiex['Date'])
-    d['basis'] = (taiex['Close'] - d['Close']).fillna(method='ffill')
+    tmp = taiex['Close'].reindex(d['Date']).fillna(method='ffill')
+    d['basis'] = (tmp - d['Close'])
+    #d['basis'] = d['basis'] / tmp  # scale to [-1,1]
+    d['basis'] = d['basis'] / 1000
     return d['basis'].reset_index(drop=True)
 
 
@@ -233,7 +240,7 @@ if __name__ == "__main__":
     # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
-    df['basis'] = basis(df)
+    df['basis'] = basis(df)  # basis feature
     df = vol_feature(df)  # volume feature
     df = oi_feature(df)  # oi feature
     df = candle(df)  # candlestick feature
@@ -250,7 +257,6 @@ if __name__ == "__main__":
     # kalman filter
     df['kalman_log_rtn1'] = np.log(kalman(df.Close)).diff(1)
     df = df[1:]  # df[0] has nan
-    df['kalman_log_rtn2'] = kalman(df.log_rtn.reset_index(drop=True))
     # wiener filter
     df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
     """
@@ -263,3 +269,5 @@ if __name__ == "__main__":
     # settlement
     df = settlement_cal(df)
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45)  # minmax scale, max=1.5 month
+    df['kalman_log_rtn2'] = kalman(df.log_rtn)
+    df.to_csv("data_simple.csv", index=False)
