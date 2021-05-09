@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from gym.spaces import Discrete, Box
 from stable_baselines3.common.vec_env import DummyVecEnv
-
+import os
 
 class TradingEnvLong(gym.Env):
     """
@@ -21,16 +21,14 @@ class TradingEnvLong(gym.Env):
             maximum number of shares to trade
     """
 
-    def __init__(self, df, futures, window_size, init_equity=100000, max_position=1):
+    def __init__(self, df, futures, init_equity=100000, max_position=1):
         self.df = df
         self.current_idx = 0
-        self.data = self.df.loc[self.current_idx, :]
         self.init_equity = init_equity
         # cost = 3 tick/per trade considering slippage
         self.futures = futures
         self.cost = self.futures.min_movement_point * self.futures.big_point_value * 3
-        self.window_size = window_size
-        self.prices = self.data[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
         self.max_position = max_position
         self.trades_list_col = ['action', 'date', 'price', 'position', 'profit', 'equity', 'drawdown']
 
@@ -42,8 +40,8 @@ class TradingEnvLong(gym.Env):
         }
         self.action_space = Discrete(len(self.action_describe))
         # observation_space 值域為[0,1]
-        self.observation = self.data.drop(columns=[['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']])
-        self.observation_space = Box(low=0, high=1, shape=(self.observation.shape[1],))
+        self.observation = self.df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI'])
+        self.observation_space = Box(low=-1.0, high=1.0, shape=(self.observation.shape[1]+1,))
         self.done = False
 
         # initialize reward
@@ -112,10 +110,12 @@ class TradingEnvLong(gym.Env):
     def step(self, actions):
         self.done = self.current_idx >= len(self.df.index.unique()) - 2
         if self.done:
+            print(self.reward)
             self._make_plot()
             return np.append(self.observation.iloc[self.current_idx].values,
                              self.position), self.scale_reward(), self.done, {}
         else:
+            #print(self.df['Date'].iloc[self.current_idx], actions)
             if self.df['until_expiration'].iloc[self.current_idx] == 0:
                 action_str = 'hold' if not self.position else 'settlement'
                 if self.position > 0:
@@ -145,16 +145,16 @@ class TradingEnvLong(gym.Env):
 
             self.actions_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
-                 'action': action_str})
+                 'action': action_str}, ignore_index=True)
             self.equity_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
-                 'equity': self.equity_tmp})
+                 'equity': self.equity_tmp}, ignore_index=True)
             self.rewards_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
-                 'rewards': self.scale_reward()})
+                 'rewards': self.scale_reward()}, ignore_index=True)
             self.current_idx += 1
             self.data = self.df.loc[self.current_idx, :]
-            self.reward = self.equity / self.drawdown  # reward = return / MDD
+            self.reward = self.equity / self.drawdown if self.drawdown else 1 # reward = return / MDD
 
             return np.append(self.observation.iloc[self.current_idx].values,
                              self.position), self.scale_reward(), self.done, {}
@@ -168,6 +168,8 @@ class TradingEnvLong(gym.Env):
 
     def _make_plot(self):
         plt.plot(self.equity_memory, 'r')
+        if not os.path.exists("/results"):
+            os.makedirs("/results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
         plt.close()
 
