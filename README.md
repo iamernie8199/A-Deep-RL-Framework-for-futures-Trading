@@ -1,4 +1,7 @@
 # A-Deep-RL-Framework-for-Index-futures-Trading
+
+[![hackmd-github-sync-badge](https://hackmd.io/xuu0j4MlSZqIQR_hB9VxhQ/badge)](https://hackmd.io/xuu0j4MlSZqIQR_hB9VxhQ)
+
 ## Data
 - 台指期
     - 交易時間: 前日夜盤+今日日盤
