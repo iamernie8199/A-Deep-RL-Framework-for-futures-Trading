@@ -170,9 +170,9 @@ def vol_feature(d):
     vol_percentile: volume percentile
     :param d: df
     """
-    d['vol_deg_change'] = d['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    d['vol_deg_change'] = d['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5).round(4)
     d['vol_percentile'] = d['Volume'].rolling(len(df), min_periods=1).apply(
-        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
+        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False).round(4)
     return d
 
 
@@ -181,9 +181,9 @@ def oi_feature(d):
     same as vol_feature, for futures
     :param d: df
     """
-    d['oi_deg_change'] = d['OI'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5)
+    d['oi_deg_change'] = d['OI'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5).round(4)
     d['oi_percentile'] = d['OI'].rolling(len(df), min_periods=1).apply(
-        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False)
+        lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False).round(4)
     return d
 
 
@@ -197,9 +197,9 @@ def candle(d):
     :param d: df
     """
     d['range'] = d['High'] - d['Low']
-    d['body'] = (np.abs(d['Open'] - d['Close']) / d['range']).fillna(1)
-    d['upper_shadow'] = ((d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']).fillna(0)
-    d['lower_shadow'] = ((d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']).fillna(0)
+    d['body'] = (np.abs(d['Open'] - d['Close']) / d['range']).fillna(1).round(4)
+    d['upper_shadow'] = ((d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']).fillna(0).round(4)
+    d['lower_shadow'] = ((d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']).fillna(0).round(4)
     return d
 
 
@@ -230,7 +230,7 @@ def basis(d):
     d['basis'] = (tmp - d['Close'])
     #d['basis'] = d['basis'] / tmp  # scale to [-1,1]
     d['basis'] = d['basis'] / 1000
-    return d['basis'].reset_index(drop=True)
+    return d['basis'].reset_index(drop=True).round(5)
 
 
 if __name__ == "__main__":
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     # hurst
     # print(hurst(df.Close))
     # 2Q/3Q/4Q
-    df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x))
+    df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x)).round(2)
     # df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
     # df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
 
@@ -268,6 +268,6 @@ if __name__ == "__main__":
     df = df.drop(columns=['range']).set_index(df['Date'])['1998/09':]
     # settlement
     df = settlement_cal(df)
-    df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45)  # minmax scale, max=1.5 month
+    df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45).round(2)  # minmax scale, max=1.5 month
     df['kalman_log_rtn2'] = kalman(df.log_rtn)
     df.to_csv("data_simple.csv", index=False)
