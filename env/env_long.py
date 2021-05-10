@@ -1,10 +1,12 @@
+import os
+
 import gym
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from gym.spaces import Discrete, Box
 from stable_baselines3.common.vec_env import DummyVecEnv
-import os
+
 
 class TradingEnvLong(gym.Env):
     """
@@ -41,7 +43,7 @@ class TradingEnvLong(gym.Env):
         self.action_space = Discrete(len(self.action_describe))
         # observation_space 值域為[0,1]
         self.observation = self.df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI'])
-        self.observation_space = Box(low=-1.0, high=1.0, shape=(self.observation.shape[1]+1,))
+        self.observation_space = Box(low=-1.0, high=1.0, shape=(self.observation.shape[1] + 1,))
         self.done = False
 
         # initialize reward
@@ -113,9 +115,9 @@ class TradingEnvLong(gym.Env):
             print(self.reward)
             self._make_plot()
             return np.append(self.observation.iloc[self.current_idx].values,
-                             self.position), self.scale_reward(), self.done, {}
+                             self.position), self.reward, self.done, {}
         else:
-            #print(self.df['Date'].iloc[self.current_idx], actions)
+            # print(self.df['Date'].iloc[self.current_idx], actions)
             if self.df['until_expiration'].iloc[self.current_idx] == 0:
                 action_str = 'hold' if not self.position else 'settlement'
                 if self.position > 0:
@@ -154,10 +156,10 @@ class TradingEnvLong(gym.Env):
                  'rewards': self.scale_reward()}, ignore_index=True)
             self.current_idx += 1
             self.data = self.df.loc[self.current_idx, :]
-            self.reward = self.equity / self.drawdown if self.drawdown else 1 # reward = return / MDD
+            self.reward = self.equity / self.drawdown if self.drawdown else self.equity  # reward = return / MDD
 
             return np.append(self.observation.iloc[self.current_idx].values,
-                             self.position), self.scale_reward(), self.done, {}
+                             self.position), self.reward, self.done, {}
 
     def scale_reward(self):
         scaled = self.reward / 50
@@ -168,8 +170,8 @@ class TradingEnvLong(gym.Env):
 
     def _make_plot(self):
         plt.plot(self.equity_memory, 'r')
-        if not os.path.exists("/results"):
-            os.makedirs("/results")
+        if not os.path.exists("./results"):
+            os.makedirs("./results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
         plt.close()
 
