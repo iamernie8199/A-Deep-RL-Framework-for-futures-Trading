@@ -108,7 +108,7 @@ eval_callback = EvalCallback(env_train, best_model_save_path='./logs/',
 # Create the callback: check every 1000 steps
 callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 #%%
-model_ppo = PPO('MlpPolicy', env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda')
+model_ppo = PPO('MlpPolicy', env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.7)
 #model_ppo = PPO.load("./logs/best_model", env=env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda')
 #%%
 #evaluate(model_ppo, num_episodes=5)
