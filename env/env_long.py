@@ -27,6 +27,7 @@ class TradingEnvLong(gym.Env):
         self.df = df
         self.current_idx = 0
         self.init_equity = init_equity
+        self.bnh = init_equity
         # cost = 3 tick/per trade considering slippage
         self.futures = futures
         self.cost = self.futures.min_movement_point * self.futures.big_point_value * 3
@@ -110,7 +111,16 @@ class TradingEnvLong(gym.Env):
         pass
 
     def step(self, actions):
-        self.done = self.current_idx >= len(self.df.index.unique()) - 2
+        self.done = (self.current_idx >= len(self.df.index.unique()) - 2) or (self.equity <= 0)
+        #if self.current_idx % 2:
+            #print(self.prices['Date'].iloc[self.current_idx])
+        if self.current_idx == 0:
+            self.bnh += self.futures.big_point_value * (
+                    self.prices['Close'].iloc[self.current_idx] - self.prices['Open'].iloc[self.current_idx])
+        else:
+            self.bnh += self.futures.big_point_value * (
+                    self.prices['Close'].iloc[self.current_idx] - self.prices['Close'].iloc[self.current_idx - 1])
+
         if self.done:
             print(self.reward)
             self._make_plot()
@@ -122,15 +132,16 @@ class TradingEnvLong(gym.Env):
                 action_str = 'hold' if not self.position else 'settlement'
                 if self.position > 0:
                     self._sell(self.prices['Close'].iloc[self.current_idx], self.position)
+
+            if actions == 1:
+                action_str = 'buy_next' if self.position < self.max_position else 'hold'
+                self._long(self.prices['Open'].iloc[self.current_idx + 1], 1)
+            elif actions == 2:
+                action_str = 'sell_next'
+                self._sell(self.prices['Open'].iloc[self.current_idx + 1], 1)
             else:
-                if actions == 1:
-                    action_str = 'buy_next' if self.position < self.max_position else 'hold'
-                    self._long(self.prices['Open'].iloc[self.current_idx + 1], 1)
-                elif actions == 2:
-                    action_str = 'sell_next'
-                    self._sell(self.prices['Open'].iloc[self.current_idx + 1], 1)
-                else:
-                    action_str = 'hold'
+                action_str = 'hold'
+
             # equity new high
             if self.equity > self.equity_h:
                 self.equity_h = self.equity
@@ -145,19 +156,24 @@ class TradingEnvLong(gym.Env):
             if dd > self.drawdown:
                 self.drawdown = dd
 
-            self.actions_memory.append(
+            self.actions_memory = self.actions_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
                  'action': action_str}, ignore_index=True)
-            self.equity_memory.append(
+            self.equity_memory = self.equity_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
                  'equity': self.equity_tmp}, ignore_index=True)
-            self.rewards_memory.append(
+            self.rewards_memory = self.rewards_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
                  'rewards': self.scale_reward()}, ignore_index=True)
             self.current_idx += 1
             self.data = self.df.loc[self.current_idx, :]
-            self.reward = self.equity / self.drawdown if self.drawdown else self.equity  # reward = return / MDD
-
+            if self.drawdown:
+                self.reward = np.round(self.equity / self.drawdown, 2) # reward = return / MDD
+            elif self.equity == self.init_equity:
+                self.reward = -np.inf
+            else:
+                self.reward = self.equity
+            # self.reward = self.equity - self.bnh
             return np.append(self.observation.iloc[self.current_idx].values,
                              self.position), self.reward, self.done, {}
 
@@ -169,7 +185,7 @@ class TradingEnvLong(gym.Env):
             return scaled
 
     def _make_plot(self):
-        plt.plot(self.equity_memory, 'r')
+        self.equity_memory['equity'].plot()
         if not os.path.exists("./results"):
             os.makedirs("./results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
