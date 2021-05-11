@@ -170,7 +170,7 @@ class TradingEnvLong(gym.Env):
             if self.drawdown:
                 self.reward = np.round(self.equity / self.drawdown, 2) # reward = return / MDD
             elif self.equity == self.init_equity:
-                self.reward = -np.inf
+                self.reward = -999
             else:
                 self.reward = self.equity
             # self.reward = self.equity - self.bnh
