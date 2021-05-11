@@ -209,10 +209,10 @@ def norm_ohlc(d):
     :param d: df
     """
     tmp_o = np.log(d['Open'])
-    d['norm_o'] = tmp_o - np.log(d['Close'].shift(1))
-    d['norm_h'] = np.log(d['High']) - tmp_o
-    d['norm_l'] = np.log(d['Low']) - tmp_o
-    d['norm_c'] = np.log(d['Close']) - tmp_o
+    d['norm_o'] = (tmp_o - np.log(d['Close'].shift(1))).round(5)
+    d['norm_h'] = (np.log(d['High']) - tmp_o).round(5)
+    d['norm_l'] = (np.log(d['Low']) - tmp_o).round(5)
+    d['norm_c'] = (np.log(d['Close']) - tmp_o).round(5)
     return d
 
 
@@ -253,12 +253,12 @@ if __name__ == "__main__":
     # df['hurst_180'] = df['Close'].rolling(180).apply(lambda x: hurst(x))
     # df['hurst_240'] = df['Close'].rolling(240).apply(lambda x: hurst(x))
 
-    df['log_rtn'] = np.log(df['Close']).diff(1)
+    df['log_rtn'] = np.log(df['Close']).diff(1).round(5)
     # kalman filter
-    df['kalman_log_rtn1'] = np.log(kalman(df.Close)).diff(1)
+    df['kalman_log_rtn1'] = np.log(kalman(df.Close)).diff(1).round(5)
     df = df[1:]  # df[0] has nan
     # wiener filter
-    df['wiener_log_rtn'] = wiener(df['log_rtn'].values)
+    #df['wiener_log_rtn'] = wiener(df['log_rtn'].values).round(5)
     """
     # filter compare
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
@@ -269,5 +269,5 @@ if __name__ == "__main__":
     # settlement
     df = settlement_cal(df)
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45).round(2)  # minmax scale, max=1.5 month
-    df['kalman_log_rtn2'] = kalman(df.log_rtn)
+    #df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
     df.to_csv("data_simple.csv", index=False)
