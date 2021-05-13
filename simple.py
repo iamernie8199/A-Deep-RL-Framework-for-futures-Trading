@@ -51,7 +51,6 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
               if self.verbose > 0:
                 print("Num timesteps: {}".format(self.num_timesteps))
                 print("Best mean reward: {:.2f} - Last mean reward per episode: {:.2f}".format(self.best_mean_reward, mean_reward))
-
               # New best model, you could save the agent here
               if mean_reward > self.best_mean_reward:
                   self.best_mean_reward = mean_reward
@@ -109,12 +108,25 @@ eval_callback = EvalCallback(env_train, best_model_save_path='./logs/',
 callback = SaveOnBestTrainingRewardCallback(check_freq=1000, log_dir=log_dir)
 #%%
 #model_ppo = PPO('MlpPolicy', env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.7)
-model_ppo = PPO.load("./logs/best_model", env=env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.65)
+model_ppo = PPO.load("./logs/best_model", env=env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.6)
 #%%
 #evaluate(model_ppo, num_episodes=5)
 #%%
-model_ppo.learn(total_timesteps=100000, tb_log_name="run_ppo", callback=eval_callback)
+model_ppo.learn(total_timesteps=10000, tb_log_name="run_ppo", callback=eval_callback)
+#model_ppo.save("ppo")
+#model_ppo = PPO.load("ppo", env=env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.8)
 """
 %load_ext tensorboard
-%tensorboard --logdir ./trading_2_tensorboard/run_ppo_1
+%tensorboard --logdir ./trading_2_tensorboard/run_ppo_41
 """
+#%%
+test = data_df[data_df.Date >= '2020-01-01'].reset_index(drop=True)
+model = PPO.load("./logs/best_model", env=env_train, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.6)
+e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2010-01-01'], futures=txf, **env_kwargs)
+env_test, _ = e_test_gym.get_sb_env()
+obs_test = env_test.reset()
+done = False
+while not done:
+    action, _states = model.predict(obs_test)
+    obs_test, rewards, done, _ = env_test.step(action)
+    #env_test.render()
