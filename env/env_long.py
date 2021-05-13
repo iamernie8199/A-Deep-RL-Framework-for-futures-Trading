@@ -60,7 +60,7 @@ class TradingEnvLong(gym.Env):
         self.trades_list = pd.DataFrame(columns=self.trades_list_col)
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
-        self.equity_memory = pd.DataFrame(columns=['date', 'equity'])
+        self.equity_memory = pd.DataFrame(columns=['date', 'equity','BnH'])
         self.rewards_memory = pd.DataFrame(columns=['date', 'rewards'])
 
     def reset(self):
@@ -161,12 +161,12 @@ class TradingEnvLong(gym.Env):
                  'action': action_str}, ignore_index=True)
             self.equity_memory = self.equity_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
-                 'equity': self.equity_tmp}, ignore_index=True)
+                 'equity': self.equity_tmp,
+                 'BnH': self.bnh}, ignore_index=True)
             self.rewards_memory = self.rewards_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
                  'rewards': self.scale_reward()}, ignore_index=True)
             self.current_idx += 1
-            self.data = self.df.loc[self.current_idx, :]
             if self.drawdown:
                 self.reward = np.round(self.equity / self.drawdown, 2) # reward = return / MDD
             elif self.equity == self.init_equity:
@@ -185,7 +185,8 @@ class TradingEnvLong(gym.Env):
             return scaled
 
     def _make_plot(self):
-        self.equity_memory['equity'].plot()
+        self.equity_memory['equity'].plot(legend=True)
+        self.equity_memory['BnH'].plot(legend=True)
         if not os.path.exists("./results"):
             os.makedirs("./results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
