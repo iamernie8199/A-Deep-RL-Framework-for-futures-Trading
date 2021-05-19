@@ -209,10 +209,10 @@ def norm_ohlc(d):
     :param d: df
     """
     tmp_o = np.log(d['Open'])
-    d['norm_o'] = (tmp_o - np.log(d['Close'].shift(1))).round(5)
-    d['norm_h'] = (np.log(d['High']) - tmp_o).round(5)
-    d['norm_l'] = (np.log(d['Low']) - tmp_o).round(5)
-    d['norm_c'] = (np.log(d['Close']) - tmp_o).round(5)
+    d['norm_o'] = (tmp_o - np.log(d['Close'].shift(1))).round(4)
+    d['norm_h'] = (np.log(d['High']) - tmp_o).round(4)
+    d['norm_l'] = (np.log(d['Low']) - tmp_o).round(4)
+    d['norm_c'] = (np.log(d['Close']) - tmp_o).round(4)
     return d.drop(columns=['range'])
 
 
