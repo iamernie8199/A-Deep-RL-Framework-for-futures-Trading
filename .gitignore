@@ -2,3 +2,5 @@
 data/raw
 .vscode/settings.json
 *.png
+trading_2_tensorboard
+__pycache__
