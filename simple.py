@@ -1,16 +1,16 @@
 import warnings
 
-warnings.filterwarnings('ignore')
-
 import numpy as np
 import pandas as pd
+from sb3_contrib import QRDQN
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.env_checker import check_env
-from sb3_contrib import QRDQN
 
 from env.env_long import TradingEnvLong
 from utils import Futures
+
+warnings.filterwarnings('ignore')
 
 
 def random_rollout(env):
@@ -81,4 +81,4 @@ done = False
 while not done:
     action, _states = model.predict(obs_test)
     obs_test, rewards, done, _ = env_test.step(action)
-    #env_test.render()
+    # env_test.render()
