@@ -1,8 +1,9 @@
+import os
+
 import gym
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import numpy as np
-import os
 import pandas as pd
 from gym.spaces import Discrete, Box
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -115,7 +116,7 @@ class TradingEnvLong(gym.Env):
                 self._entryprice = None
 
     def render(self, mode='human'):
-        if self.current_idx >= 2:
+        if self.current_idx >= (len(self.df) - 10):
             plt.close()
             data = self.prices[:self.current_idx]
             data = data.set_index(pd.to_datetime(data['Date']))
@@ -214,8 +215,8 @@ class TradingEnvLong(gym.Env):
                              self.position), self.reward, self.done, {}
 
     def _make_plot(self):
-        self.equity_memory.set_index(['date'])['equity'].plot(legend=True)
-        self.equity_memory.set_index(['date'])['BnH'].plot(legend=True, colors='r')
+        self.equity_memory.set_index(['date'])['equity'].plot.line(legend=True)
+        self.equity_memory.set_index(['date'])['BnH'].plot.line(legend=True, color='r')
         if not os.path.exists("./results"):
             os.makedirs("./results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode), bbox_inches='tight')
