@@ -35,10 +35,10 @@ class TradingEnvLong(gym.Env):
         self.log = log
         # buy & hold return
         self.bnh = self.init_equity
-        # cost = 3 tick/per trade considering slippage
+        # cost = (cost//2) tick/per trade considering slippage
         self.cost = self.futures.min_movement_point * self.futures.big_point_value * (cost // 2)
 
-        self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
+        self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']]
         self.prices['signal_E'] = np.nan
         self.prices['signal_X'] = np.nan
 
@@ -54,14 +54,21 @@ class TradingEnvLong(gym.Env):
         self.position = 0
         self.points = 0
         self.equity = self.init_equity
+        self.equity_tmp = self.init_equity
         self.equity_l = self.init_equity
         self.equity_h = self.init_equity
         self._entryprice = None
         self.drawdown = 0
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
-        self.equity_memory = pd.DataFrame(columns=['date', 'equity_l', 'equity_h', 'BnH'])
-        self.tradeslist_col = ['date', 'action', 'price', 'profit', 'drawdown']
+        """
+        equity_tmp: end of the day equity
+        equity_l: lowest equity of the day
+        equity_h: highest  equity of the day
+        """
+        self.equity_col = ['date', 'equity_tmp', 'equity_l', 'equity_h', 'equity_dd', 'BnH']
+        self.tradeslist_col = ['date', 'action', 'price', 'contracts', 'profit', 'drawdown']
+        self.equity_memory = pd.DataFrame(columns=self.equity_col)
         self.trades_list = pd.DataFrame(columns=self.tradeslist_col)
 
     def reset(self):
@@ -69,19 +76,20 @@ class TradingEnvLong(gym.Env):
         self.current_idx = 0
         self.done = False
 
-        self.equity = self.init_equity
         self.bnh = self.init_equity
 
         self.reward = 0
         self.position = 0
         self.points = 0
+        self.equity = self.init_equity
+        self.equity_tmp = self.init_equity
         self.equity_l = self.init_equity
         self.equity_h = self.init_equity
         self.drawdown = 0
         self._entryprice = None
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
-        self.equity_memory = pd.DataFrame(columns=['date', 'equity_l', 'equity_h', 'BnH'])
+        self.equity_memory = pd.DataFrame(columns=self.equity_col)
         self.trades_list = pd.DataFrame(columns=self.tradeslist_col)
 
         self.prices['signal_E'] = np.nan
@@ -93,11 +101,6 @@ class TradingEnvLong(gym.Env):
         self.equity -= self.cost * contracts
 
     def _long(self, price, contracts):
-        """
-        :param price:
-        :param contracts:
-        :return:
-        """
         if self.position < self.max_position:
             self.position += contracts
             self.commission_cost(contracts)
@@ -111,14 +114,16 @@ class TradingEnvLong(gym.Env):
             self.commission_cost(contracts)
             # Close out of long position
             if self.position == 0:
-                self.equity -= self.points * self.futures.big_point_value
+                profit = -(self.points * self.futures.big_point_value)
+                self.equity += profit
                 self.points = 0
                 self._entryprice = None
+                return profit
 
     def render(self, mode='human'):
-        if self.current_idx >= (len(self.df) // 2):
+        if self.current_idx >= (len(self.df) - 10):
             plt.close()
-            data = self.prices[:self.current_idx]
+            data = self.prices[max(0, self.current_idx - 200):self.current_idx]
             data = data.set_index(pd.to_datetime(data['Date']))
             data = data.drop(columns=['Date'])
             mc = mpf.make_marketcolors(up='#fe3032', down='#00b060', inherit=True)
@@ -139,8 +144,8 @@ class TradingEnvLong(gym.Env):
 
     def step(self, actions):
         self.done = (self.current_idx >= len(self.df.index.unique()) - 2)  # or (self.equity <= 0)
-        # if self.current_idx % 2:
-        # print(self.prices['Date'].iloc[self.current_idx])
+
+        # calculate buy and hold return
         if self.current_idx == 0:
             self.bnh += self.futures.big_point_value * (
                     self.prices['Close'].iloc[self.current_idx] - self.prices['Open'].iloc[self.current_idx])
@@ -148,34 +153,76 @@ class TradingEnvLong(gym.Env):
             self.bnh += self.futures.big_point_value * (
                     self.prices['Close'].iloc[self.current_idx] - self.prices['Close'].iloc[self.current_idx - 1])
 
+        if self.position > 0:
+            self.equity_tmp = self.equity + (
+                    self.prices['Close'].iloc[self.current_idx] - self._entryprice) * self.futures.big_point_value
+            self.equity_l = self.equity + (
+                    self.prices['Low'].iloc[self.current_idx] - self._entryprice) * self.futures.big_point_value
+            self.equity_h = self.equity + (
+                    self.prices['High'].iloc[self.current_idx] - self._entryprice) * self.futures.big_point_value
+        else:
+            self.equity_tmp = self.equity
+            self.equity_l = self.equity
+            self.equity_h = self.equity
+
+        self.equity_memory = self.equity_memory.append({
+            'date': self.prices['Date'].iloc[self.current_idx],
+            'equity_tmp': self.equity_tmp,
+            'equity_l': self.equity_l,
+            'equity_h': self.equity_h,
+            'equity_dd': self.equity_memory['equity_h'].max() - self.equity_l,
+            'BnH': self.bnh
+        }, ignore_index=True)
+
         if self.done:
             print(self.reward)
             self._make_plot()
             if self.log:
                 self._make_log()
-            return np.append(self.observation.iloc[self.current_idx].values,
-                             self.position), self.reward, self.done, {}
+            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, {}
         else:
-            # print(self.df['Date'].iloc[self.current_idx], actions)
+            # settlement
             if self.df['until_expiration'].iloc[self.current_idx] == 0 and self.position > 0:
                 c = self.prices['Close'].iloc[self.current_idx]
-                self._sell(self.prices['Close'].iloc[self.current_idx], self.position)
+                p = self._sell(c, self.position)
                 self.prices['signal_X'].iloc[self.current_idx] = self.prices['High'].iloc[self.current_idx] * 1.01
                 self.trades_list = self.trades_list.append(
-                    {'date': self.prices['Date'].iloc[self.current_idx + 1],
+                    {'date': self.prices['Date'].iloc[self.current_idx],
                      'action': 'settlement',
                      'price': c,
-                     'profit': c - self._entryprice - 2 * self.cost,
+                     'contracts': self.position,
+                     'profit': p,
                      'drawdown': self.equity_memory['equity_h'].max() - (
-                                 self.init_equity + self.trades_list['profit'].sum())
+                             self.init_equity + self.trades_list['profit'].sum() + p)
                      }, ignore_index=True)
 
             if actions == 1:
-                action_str = 'buy_next' if self.position < self.max_position else 'hold'
-                self._long(self.prices['Open'].iloc[self.current_idx + 1], 1)
-            elif actions == 2:
+                if self.position < self.max_position:
+                    action_str = 'buy_next'
+                    o = self.prices['Open'].iloc[self.current_idx + 1]
+                    self._long(o, 1)
+                    self.trades_list = self.trades_list.append({
+                        'date': self.prices['Date'].iloc[self.current_idx + 1],
+                        'action': 'buy',
+                        'price': o,
+                        'contracts': 1,
+                        'profit': np.nan,
+                        'drawdown': np.nan
+                    }, ignore_index=True)
+                else:
+                    action_str = 'hold'
+            elif actions == 2 and self.position > 0:
                 action_str = 'sell_next'
-                self._sell(self.prices['Open'].iloc[self.current_idx + 1], 1)
+                o = self.prices['Open'].iloc[self.current_idx + 1]
+                p = self._sell(o, 1)
+                self.trades_list = self.trades_list.append({
+                    'date': self.prices['Date'].iloc[self.current_idx + 1],
+                    'action': 'sell',
+                    'price': o,
+                    'contracts': 1,
+                    'drawdown': self.equity_memory['equity_h'].max() - (
+                            self.init_equity + self.trades_list['profit'].sum() + p)
+                }, ignore_index=True)
             else:
                 action_str = 'hold'
 
@@ -188,15 +235,7 @@ class TradingEnvLong(gym.Env):
                                                                          self.current_idx + 1] * 1.01
 
             # equity new high
-            if self.equity > self.equity_h:
-                self.equity_h = self.equity
-
-            if self.position > 0:
-                self.equity_l += (self.prices['Low'].iloc[
-                                      self.current_idx] - self._entryprice) * self.futures.big_point_value
-            else:
-                self.equity_l = self.equity
-            dd = self.equity_h - self.equity_l
+            dd = self.equity_memory['equity_h'].max() - self.equity_l
             # MDD new high
             if dd > self.drawdown:
                 self.drawdown = dd
@@ -204,11 +243,8 @@ class TradingEnvLong(gym.Env):
             self.actions_memory = self.actions_memory.append(
                 {'date': self.prices['Date'].iloc[self.current_idx],
                  'action': action_str}, ignore_index=True)
-            self.equity_memory = self.equity_memory.append(
-                {'date': self.prices['Date'].iloc[self.current_idx],
-                 'equity': self.equity_l,
-                 'BnH': self.bnh}, ignore_index=True)
-            self.current_idx += 1
+
+            # reward
             if self.drawdown:
                 self.reward = np.round(self.equity / self.drawdown, 2)  # reward = return / MDD
             elif self.equity == self.init_equity:
@@ -216,19 +252,23 @@ class TradingEnvLong(gym.Env):
             else:
                 self.reward = self.equity
             # self.reward = self.equity - self.bnh
+
+            self.current_idx += 1
+
             return np.append(self.observation.iloc[self.current_idx].values,
                              self.position), self.reward, self.done, {}
 
     def _make_plot(self):
-        self.equity_memory.set_index(['date'])['equity'].plot(legend=True)
-        self.equity_memory.set_index(['date'])['BnH'].plot(legend=True, colors='r')
+        self.equity_memory.set_index(['date'])['equity_tmp'].plot.line(legend=True)
+        self.equity_memory.set_index(['date'])['BnH'].plot.line(legend=True, color='r')
         if not os.path.exists("./results"):
             os.makedirs("./results")
         plt.savefig('results/account_value_trade_{}.png'.format(self.episode))
         plt.close()
 
     def _make_log(self):
-        self.equity_memory.to_csv(f'results_pic/{self.episode}.csv')
+        self.equity_memory.to_csv(f'results_pic/equity_{self.episode}.csv')
+        self.trades_list.to_csv(f'results_pic/trades_list_{self.episode}.csv')
 
     def get_sb_env(self):
         e = DummyVecEnv([lambda: self])
