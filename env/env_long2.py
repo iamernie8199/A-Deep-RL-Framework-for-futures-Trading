@@ -24,7 +24,7 @@ class TradingEnvLong(gym.Env):
             maximum number of shares to trade
     """
 
-    def __init__(self, df, futures, cost=6, init_equity=100000, max_position=1, log=False):
+    def __init__(self, df, futures, cost=6, init_equity=100000, max_position=1, log=False, r='rtn_on_mdd'):
         self.df = df
         self.futures = futures
         self.current_idx = 0
@@ -50,6 +50,7 @@ class TradingEnvLong(gym.Env):
         self.observation_space = Box(low=-1.0, high=1.0, shape=(self.observation.shape[1] + 1,))
 
         # initialize reward
+        self.r = r
         self.reward = 0
         self.position = 0
         self.points = 0
@@ -62,9 +63,12 @@ class TradingEnvLong(gym.Env):
         self.winrate = 0
         self.avg_win = 0
         self.avg_loss = -0
+        self.rtn_on_mdd = 0
         self.profit_factor = 0
         self.ratio_winloss = 0
         self.avg_trade = 0
+        self.out_perform = 0
+        self.sharpe = 0
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
         """
@@ -81,23 +85,24 @@ class TradingEnvLong(gym.Env):
         self.episode += 1
         self.current_idx = 0
         self.done = False
-
         self.bnh = self.init_equity
-
-        self.reward = 0
-        self.position = 0
-        self.points = 0
         self.equity = self.init_equity
         self.equity_tmp = self.init_equity
         self.equity_l = self.init_equity
         self.equity_h = self.init_equity
+        self.reward = 0
+        self.position = 0
+        self.points = 0
+        self.out_perform = 0
         self.drawdown = 0
         self.winrate = 0
         self.profit_factor = 0
         self.avg_win = 0
         self.avg_loss = -0
         self.ratio_winloss = 0
+        self.rtn_on_mdd = 0
         self.avg_trade = 0
+        self.sharpe = 0
         self._entryprice = None
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
@@ -187,7 +192,8 @@ class TradingEnvLong(gym.Env):
         }, ignore_index=True)
 
         if self.done:
-            print(self.reward)
+            print(f"return on mdd: {self.rtn_on_mdd}")
+            print(f"sharpe: {self.sharpe}")
             self._make_plot()
             if self.log:
                 self._make_log()
@@ -258,23 +264,29 @@ class TradingEnvLong(gym.Env):
                  'action': action_str}, ignore_index=True)
 
             # reward
-            if self.drawdown:
-                self.reward = np.round(self.equity / self.drawdown, 2)  # reward = return / MDD
-            elif self.equity == self.init_equity:
-                self.reward = -999
-            else:
-                self.reward = self.equity
-            # self.reward = self.equity - self.bnh
-
             tradelist = self.trades_list[self.trades_list['profit'].notna()]
             win = tradelist.profit >= 0
             loss = tradelist.profit < 0
+            self.rtn_on_mdd = np.round(self.equity / max(self.drawdown, 1), 2)
             self.winrate = round(len(tradelist[win]) / len(tradelist), 4) if len(tradelist) else 0
             self.profit_factor = -round(tradelist[win]['profit'].sum() / max(tradelist[loss]['profit'].sum(), 1), 2)
             self.avg_win = round(tradelist[win]['profit'].sum() / max(len(tradelist[win]), 1), 0)
             self.avg_loss = round(tradelist[loss]['profit'].sum() / max(len(tradelist[loss]), 1), 0)
             self.ratio_winloss = -round(self.avg_win / self.avg_loss, 2) if self.avg_loss else self.avg_win
             self.avg_trade = round(tradelist['profit'].mean(), 0)
+            lattest_profit = self.equity_memory['equity_tmp'].diff(1).values[-1]
+            daily_rtn = self.equity_memory['equity_tmp'].pct_change(1)
+            if daily_rtn.std():
+                self.sharpe = round((252 ** 0.5) * daily_rtn.mean() / daily_rtn.std(), 2)
+            else:
+                self.sharpe = round((252 ** 0.5) * daily_rtn.mean(), 2)
+            self.out_perform = self.equity_tmp - self.bnh
+
+            if self.drawdown:
+                #self.reward = self.rtn_on_mdd
+                self.reward = self.sharpe
+            elif self.equity == self.init_equity:
+                self.reward = -999
 
             self.current_idx += 1
 
