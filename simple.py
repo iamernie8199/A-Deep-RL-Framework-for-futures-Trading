@@ -16,7 +16,6 @@ warnings.filterwarnings('ignore')
 def random_rollout(env):
     state = env.reset()
     dones = False
-    reward = 0
     # Keep looping as long as the simulation has not finished.
     while not dones:
         # Choose a random action (0, 1, 2).
@@ -78,6 +77,8 @@ while not done:
     action, _states = model.predict(obs_test)
     obs_test, rewards, done, _ = env_test.step(action)
     env_test.render()
+# %%
+random_rollout(e_test_gym)
 
 """
 %load_ext tensorboard
