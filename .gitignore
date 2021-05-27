@@ -4,3 +4,4 @@ data/raw
 *.png
 trading_2_tensorboard
 __pycache__
+*.csv
