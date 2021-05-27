@@ -59,6 +59,12 @@ class TradingEnvLong(gym.Env):
         self.equity_h = self.init_equity
         self._entryprice = None
         self.drawdown = 0
+        self.winrate = 0
+        self.avg_win = 0
+        self.avg_loss = -0
+        self.profit_factor = 0
+        self.ratio_winloss = 0
+        self.avg_trade = 0
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
         """
@@ -86,6 +92,12 @@ class TradingEnvLong(gym.Env):
         self.equity_l = self.init_equity
         self.equity_h = self.init_equity
         self.drawdown = 0
+        self.winrate = 0
+        self.profit_factor = 0
+        self.avg_win = 0
+        self.avg_loss = -0
+        self.ratio_winloss = 0
+        self.avg_trade = 0
         self._entryprice = None
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
@@ -170,7 +182,7 @@ class TradingEnvLong(gym.Env):
             'equity_tmp': self.equity_tmp,
             'equity_l': self.equity_l,
             'equity_h': self.equity_h,
-            'equity_dd': self.equity_memory['equity_h'].max() - self.equity_l,
+            'equity_dd': max(self.equity_memory['equity_h'].max(), self.equity_h) - self.equity_l,
             'BnH': self.bnh
         }, ignore_index=True)
 
@@ -190,8 +202,8 @@ class TradingEnvLong(gym.Env):
                     {'date': self.prices['Date'].iloc[self.current_idx],
                      'action': 'settlement',
                      'price': c,
-                     'contracts': self.position,
-                     'profit': p,
+                     'contracts': 1,
+                     'profit': p - 2 * self.cost,
                      'drawdown': self.equity_memory['equity_h'].max() - (
                              self.init_equity + self.trades_list['profit'].sum() + p)
                      }, ignore_index=True)
@@ -219,6 +231,7 @@ class TradingEnvLong(gym.Env):
                     'date': self.prices['Date'].iloc[self.current_idx + 1],
                     'action': 'sell',
                     'price': o,
+                    'profit': p - 2 * self.cost,
                     'contracts': 1,
                     'drawdown': self.equity_memory['equity_h'].max() - (
                             self.init_equity + self.trades_list['profit'].sum() + p)
@@ -252,6 +265,16 @@ class TradingEnvLong(gym.Env):
             else:
                 self.reward = self.equity
             # self.reward = self.equity - self.bnh
+
+            tradelist = self.trades_list[self.trades_list['profit'].notna()]
+            win = tradelist.profit >= 0
+            loss = tradelist.profit < 0
+            self.winrate = round(len(tradelist[win]) / len(tradelist), 4) if len(tradelist) else 0
+            self.profit_factor = -round(tradelist[win]['profit'].sum() / max(tradelist[loss]['profit'].sum(), 1), 2)
+            self.avg_win = round(tradelist[win]['profit'].sum() / max(len(tradelist[win]), 1), 0)
+            self.avg_loss = round(tradelist[loss]['profit'].sum() / max(len(tradelist[loss]), 1), 0)
+            self.ratio_winloss = -round(self.avg_win / self.avg_loss, 2) if self.avg_loss else self.avg_win
+            self.avg_trade = round(tradelist['profit'].mean(), 0)
 
             self.current_idx += 1
 
