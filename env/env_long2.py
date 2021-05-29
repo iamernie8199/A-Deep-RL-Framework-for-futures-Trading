@@ -283,8 +283,8 @@ class TradingEnvLong(gym.Env):
             self.out_perform = self.equity_tmp - self.bnh
 
             if self.drawdown:
-                #self.reward = self.rtn_on_mdd
-                self.reward = self.sharpe
+                self.reward = self.rtn_on_mdd
+                # self.reward = self.sharpe
             elif self.equity == self.init_equity:
                 self.reward = -999
 
@@ -302,8 +302,8 @@ class TradingEnvLong(gym.Env):
         plt.close()
 
     def _make_log(self):
-        self.equity_memory.to_csv(f'results_pic/equity_{self.episode}.csv')
-        self.trades_list.to_csv(f'results_pic/trades_list_{self.episode}.csv')
+        self.equity_memory.to_csv(f'results_pic/equity_{self.episode}.csv', index=False)
+        self.trades_list.to_csv(f'results_pic/trades_list_{self.episode}.csv', index=False)
 
     def get_sb_env(self):
         e = DummyVecEnv([lambda: self])
