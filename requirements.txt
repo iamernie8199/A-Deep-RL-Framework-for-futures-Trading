@@ -6,3 +6,5 @@ gym~=0.18.0
 matplotlib~=3.3.4
 scipy~=1.6.2
 mplfinance~=0.12.7a17
+stable-baselines3~=1.0
+sb3-contrib~=1.0
