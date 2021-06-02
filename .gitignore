@@ -1,4 +1,5 @@
 .idea
+venv
 data/raw
 .vscode/settings.json
 *.png
