@@ -1,10 +1,10 @@
 import warnings
 from glob import glob
 
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import seaborn as sns
 from stable_baselines3 import PPO
 
 from env.env_long2 import TradingEnvLong
@@ -22,8 +22,6 @@ def random_rollout(env):
         act = np.random.choice(3, 1)[0]
         # Take the action in the environment.
         state, reward, dones, _ = env.step(act)
-    # Return the cumulative reward.
-    return reward
 
 
 def result(title=''):
@@ -36,7 +34,7 @@ def result(title=''):
     random_df.columns = range(len(random_df.columns))
     # random_df.plot(legend=False, title=title)
     sns.lineplot(data=random_df, legend=False, linewidth=1.25).set_title(title)
-    plt.show()
+    plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
 
 
 data_df = pd.read_csv("data_simple.csv")
@@ -54,7 +52,8 @@ model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./tra
 # %%
 for _ in range(20):
     random_rollout(e_test_gym)
-
+result(title='random')
+shutil.rmtree('results')
 # %%
 obs_test = e_test_gym.reset()
 done = False
