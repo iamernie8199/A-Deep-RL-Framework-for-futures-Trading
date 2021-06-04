@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import requests
 from pykalman import KalmanFilter
-from scipy.signal.signaltools import wiener
 
 warnings.filterwarnings('ignore')
 
@@ -228,9 +227,28 @@ def basis(d):
     taiex = taiex.set_index(taiex['Date'])
     tmp = taiex['Close'].reindex(d['Date']).fillna(method='ffill')
     d['basis'] = (tmp - d['Close'])
-    #d['basis'] = d['basis'] / tmp  # scale to [-1,1]
+    # d['basis'] = d['basis'] / tmp  # scale to [-1,1]
     d['basis'] = d['basis'] / 1000
     return d['basis'].reset_index(drop=True).round(5)
+
+
+def year_frac(start, end):
+    """
+    a year fraction between two dates (i.e. 1.53 years).
+    Approximation using the average number of seconds in a year.
+    Parameters
+    ----------
+    start(datetime): start date
+    end(datetime): end date
+
+    Returns: year fraction approximation between two dates
+    -------
+    """
+    if start > end:
+        raise ValueError("start cannot be larger than end")
+
+    # obviously not perfect but good enough
+    return (end - start).total_seconds() / (31557600)
 
 
 if __name__ == "__main__":
@@ -258,7 +276,7 @@ if __name__ == "__main__":
     df['kalman_log_rtn1'] = np.log(kalman(df.Close)).diff(1).round(5)
     df = df[1:]  # df[0] has nan
     # wiener filter
-    #df['wiener_log_rtn'] = wiener(df['log_rtn'].values).round(5)
+    # df['wiener_log_rtn'] = wiener(df['log_rtn'].values).round(5)
     """
     # filter compare
     df.plot(x='Date', y=['log_rtn', 'wiener_log_rtn'], kind='kde')
@@ -269,5 +287,5 @@ if __name__ == "__main__":
     # settlement
     df = settlement_cal(df)
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45).round(2)  # minmax scale, max=1.5 month
-    #df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
+    # df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
     df.to_csv("data_simple.csv", index=False)
