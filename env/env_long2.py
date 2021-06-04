@@ -8,6 +8,8 @@ import pandas as pd
 from gym.spaces import Discrete, Box
 from stable_baselines3.common.vec_env import DummyVecEnv
 
+from utils import year_frac
+
 
 class TradingEnvLong(gym.Env):
     """
@@ -69,6 +71,10 @@ class TradingEnvLong(gym.Env):
         self.avg_trade = 0
         self.out_perform = 0
         self.sharpe = 0
+        self.trade_num = 0
+        self.gross_profit = 0
+        self.gross_loss = 0
+        self.cagr = 0
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
         """
@@ -103,6 +109,10 @@ class TradingEnvLong(gym.Env):
         self.rtn_on_mdd = 0
         self.avg_trade = 0
         self.sharpe = 0
+        self.trade_num = 0
+        self.gross_profit = 0
+        self.gross_loss = 0
+        self.cagr = 0
         self._entryprice = None
 
         self.actions_memory = pd.DataFrame(columns=['date', 'action'])
@@ -192,8 +202,20 @@ class TradingEnvLong(gym.Env):
         }, ignore_index=True)
 
         if self.done:
-            print(f"return on mdd: {self.rtn_on_mdd}")
-            print(f"sharpe: {self.sharpe}")
+            print(f"Net Profit:\t{self.equity_tmp - self.init_equity}")
+            print(f"Gross Profit:\t{self.gross_profit}")
+            print(f"Gross Loss:\t{self.gross_loss}")
+            print(f"Return on Initial Capital:\t{(self.equity_tmp - self.init_equity) / self.init_equity}")
+            print(f"MDD:\t{self.drawdown}")
+            print(f"Return on MDD:\t{self.rtn_on_mdd}")
+            print(f"Profit Factor:\t{self.profit_factor}")
+            print(f"Annual Rate of Return:\t{round(self.cagr * 100, 2)}%")
+            print(f"Total # of Trades:\t{self.trade_num}")
+            print(f"% Profitable:\t{round(self.winrate * 100, 2)}%")
+            print(f"Sharpe:\t{self.sharpe}")
+            print(f"Avg Trade:\t{self.avg_trade}")
+            print(f"Ratio Avg Win / Loss:\t{round(self.ratio_winloss, 4)}")
+            print("=============================================")
             self._make_plot()
             if self.log:
                 self._make_log()
@@ -269,13 +291,28 @@ class TradingEnvLong(gym.Env):
             loss = tradelist.profit < 0
             self.rtn_on_mdd = np.round(self.equity / max(self.drawdown, 1), 2)
             self.winrate = round(len(tradelist[win]) / len(tradelist), 4) if len(tradelist) else 0
-            self.profit_factor = -round(tradelist[win]['profit'].sum() / max(tradelist[loss]['profit'].sum(), 1), 2)
-            self.avg_win = round(tradelist[win]['profit'].sum() / max(len(tradelist[win]), 1), 0)
-            self.avg_loss = round(tradelist[loss]['profit'].sum() / max(len(tradelist[loss]), 1), 0)
-            self.ratio_winloss = -round(self.avg_win / self.avg_loss, 2) if self.avg_loss else self.avg_win
+            self.gross_profit = tradelist[win]['profit'].sum()
+            self.gross_loss = tradelist[loss]['profit'].sum()
+            self.profit_factor = round(self.gross_profit / max(-self.gross_loss, 1), 2)
+            if self.gross_profit < -self.gross_loss:
+                self.profit_factor = -self.profit_factor
+            self.avg_win = round(self.gross_profit / max(len(tradelist[win]), 1), 0)
+            self.avg_loss = round(self.gross_loss / max(len(tradelist[loss]), 1), 0)
+            self.ratio_winloss = self.avg_win / self.avg_loss if self.avg_loss else self.avg_win
             self.avg_trade = round(tradelist['profit'].mean(), 0)
+            self.trade_num = len(tradelist)
+            if self.current_idx > 0:
+                # year_num = year_frac(self.equity_memory['date'].iloc[0], self.prices['Date'].iloc[self.current_idx])
+                year_num = year_frac(self.equity_memory['date'].iloc[0],
+                                     self.equity_memory[self.equity_memory.equity_tmp > 0]['date'].iloc[-1])
+                if self.equity > 0:
+                    self.cagr = (self.equity / self.init_equity) ** (1 / year_num) - 1
+                else:
+                    self.cagr = (1 / self.init_equity) ** (1 / year_num) - 1
             lattest_profit = self.equity_memory['equity_tmp'].diff(1).values[-1]
             daily_rtn = self.equity_memory['equity_tmp'].pct_change(1)
+            # daily_rtn = daily_rtn[(daily_rtn != -np.inf) & (daily_rtn != np.inf)]
+            daily_rtn = daily_rtn.replace([np.inf, -np.inf], [1, -1])
             if daily_rtn.std():
                 self.sharpe = round((252 ** 0.5) * daily_rtn.mean() / daily_rtn.std(), 2)
             else:
@@ -302,6 +339,8 @@ class TradingEnvLong(gym.Env):
         plt.close()
 
     def _make_log(self):
+        if not os.path.exists("./results_pic"):
+            os.makedirs("./results_pic")
         self.equity_memory.to_csv(f'results_pic/equity_{self.episode}.csv', index=False)
         self.trades_list.to_csv(f'results_pic/trades_list_{self.episode}.csv', index=False)
 
