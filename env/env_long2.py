@@ -166,6 +166,7 @@ class TradingEnvLong(gym.Env):
                          ylabel='', ylabel_lower='', tight_layout=True, datetime_format="'%y-%b-%d", xrotation=0,
                          returnfig=True)
             finally:
+                plt.savefig('render.png', bbox_inches='tight')
                 plt.show(block=False)
                 plt.pause(0.0001)
 
@@ -219,7 +220,9 @@ class TradingEnvLong(gym.Env):
             self._make_plot()
             if self.log:
                 self._make_log()
-            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, {}
+            out = [self.equity_tmp - self.init_equity, self.rtn_on_mdd, self.profit_factor, round(self.cagr * 100, 2),
+                   self.trade_num, round(self.winrate * 100, 2)]
+            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, out
         else:
             # settlement
             if self.df['until_expiration'].iloc[self.current_idx] == 0 and self.position > 0:
@@ -298,7 +301,7 @@ class TradingEnvLong(gym.Env):
                 self.profit_factor = -self.profit_factor
             self.avg_win = round(self.gross_profit / max(len(tradelist[win]), 1), 0)
             self.avg_loss = round(self.gross_loss / max(len(tradelist[loss]), 1), 0)
-            self.ratio_winloss = self.avg_win / self.avg_loss if self.avg_loss else self.avg_win
+            self.ratio_winloss = self.avg_win / -self.avg_loss if self.avg_loss else self.avg_win
             self.avg_trade = round(tradelist['profit'].mean(), 0)
             self.trade_num = len(tradelist)
             if self.current_idx > 0:
