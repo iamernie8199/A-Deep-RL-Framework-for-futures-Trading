@@ -20,7 +20,7 @@ train = train.reset_index(drop=True)
 
 txf = Futures()
 env_kwargs = {}
-e_train_gym = TradingEnvLong(df=train, futures=txf, **env_kwargs)
+e_train_gym = TradingEnvLong(df=train, **env_kwargs)
 env_train, _ = e_train_gym.get_sb_env()
 check_env(e_train_gym)
 # Use deterministic actions for evaluation
