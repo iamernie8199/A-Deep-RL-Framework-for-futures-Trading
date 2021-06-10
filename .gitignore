@@ -7,3 +7,4 @@ trading_2_tensorboard
 __pycache__
 *.csv
 *.npz
+*.zip
