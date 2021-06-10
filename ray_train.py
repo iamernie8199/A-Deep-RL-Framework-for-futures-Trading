@@ -26,12 +26,14 @@ analysis = tune.run(
     stop={
         "episode_reward_mean": 500
     },
+    mode='max',
     config={
         "env": "TradingEnv",
-        "log_level": "DEBUG",
-        "framework": "torch",
+        "log_level": "WARN",
+        "framework": "tf",
         "ignore_worker_failures": True,
         "num_workers": 2,
+        "num_cpus_per_worker": 2,
         "num_gpus": 1,
         "clip_rewards": True,
         "lr": 8e-6,
@@ -47,12 +49,15 @@ analysis = tune.run(
         "gamma": 0,
         "observation_filter": "MeanStdFilter",
         "lambda": 0.72,
-        "vf_loss_coeff": 0.5,
+        "vf_loss_coeff": 10,
         "entropy_coeff": 0.01,
     },
+    # restore from the last checkpoint
+    restore=checkpoint_path,
+    reuse_actors=True,
+    checkpoint_freq=3,
     checkpoint_at_end=True
 )
-
 
 # Get checkpoint
 checkpoints = analysis.get_trial_checkpoints_paths(
@@ -60,12 +65,14 @@ checkpoints = analysis.get_trial_checkpoints_paths(
     metric="episode_reward_mean"
 )
 checkpoint_path = checkpoints[0][0]
+print(checkpoint_path)
+# C:\Users\iamer\ray_results\PPO\PPO_TradingEnv_c4d50_00000_0_2021-06-10_22-33-05\checkpoint_000005\checkpoint-5
 # Restore agent
 agent = ppo.PPOTrainer(
     env="TradingEnv",
     config={
-        "framework": "torch",
-        "log_level": "DEBUG",
+        "framework": "tf",
+        "log_level": "WARN",
         "ignore_worker_failures": True,
         "num_workers": 2,
         "num_gpus": 1,
@@ -83,7 +90,7 @@ agent = ppo.PPOTrainer(
         "gamma": 0,
         "observation_filter": "MeanStdFilter",
         "lambda": 0.72,
-        "vf_loss_coeff": 0.5,
+        "vf_loss_coeff": 10,
         "entropy_coeff": 0.01
     }
 )
