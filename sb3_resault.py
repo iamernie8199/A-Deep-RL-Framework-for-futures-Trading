@@ -64,7 +64,7 @@ data_df['Date'] = pd.to_datetime(data_df['Date'])
 txf = Futures()
 env_kwargs = {}
 
-e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], futures=txf, log=True, **env_kwargs)
+e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
 env_test, _ = e_test_gym.get_sb_env()
 # %%
 model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda', gamma=0.8)
