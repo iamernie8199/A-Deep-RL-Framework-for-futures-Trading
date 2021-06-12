@@ -257,6 +257,7 @@ def year_frac(start, end):
 def random_rollout(env, bnh=False):
     state = env.reset()
     dones = False
+    info = []
     # Keep looping as long as the simulation has not finished.
     while not dones:
         # Choose a random action (0, 1, 2).
@@ -265,11 +266,12 @@ def random_rollout(env, bnh=False):
         else:
             act = np.random.choice(3, 1)[0]
         # Take the action in the environment.
-        state, reward, dones, info = env.step(act)
+        state, reward, dones, i = env.step(act)
+    info.append(i)
     return info
 
 
-def result(title=''):
+def result(title='', init_equity=1000000):
     equitylist = glob('results_pic/equity_*.csv')
     random_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
     for path in equitylist[1:]:
@@ -281,7 +283,7 @@ def result(title=''):
     plt.figure(figsize=(12, 7))
     ax = sns.lineplot(data=random_df, legend=False, linewidth=1.25)
     ax.set_title(title)
-    ax.axhline(100000, ls='-.', c='grey')
+    ax.axhline(init_equity, ls='-.', c='grey')
     plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
 
 
