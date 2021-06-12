@@ -350,6 +350,7 @@ class TradingEnvLong(gym.Env):
             os.makedirs("./results_pic")
         self.equity_memory.to_csv(f'results_pic/equity_{self.episode}.csv', index=False)
         self.trades_list.to_csv(f'results_pic/trades_list_{self.episode}.csv', index=False)
+        self.actions_memory.to_csv(f'results_pic/actions_{self.episode}.csv', index=False)
 
     def get_sb_env(self):
         e = DummyVecEnv([lambda: self])
