@@ -8,3 +8,4 @@ scipy~=1.6.2
 mplfinance~=0.12.7a17
 stable-baselines3~=1.0
 sb3-contrib~=1.0
+ray~=1.4.0
