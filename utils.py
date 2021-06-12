@@ -6,9 +6,12 @@ import warnings
 from fractions import Fraction
 from glob import glob
 
+import matplotlib.pyplot as plt
+import mplfinance as mpf
 import numpy as np
 import pandas as pd
 import requests
+import seaborn as sns
 from pykalman import KalmanFilter
 
 warnings.filterwarnings('ignore')
@@ -249,6 +252,75 @@ def year_frac(start, end):
 
     # obviously not perfect but good enough
     return (end - start).total_seconds() / (31557600)
+
+
+def random_rollout(env, bnh=False):
+    state = env.reset()
+    dones = False
+    # Keep looping as long as the simulation has not finished.
+    while not dones:
+        # Choose a random action (0, 1, 2).
+        if bnh:
+            act = 1
+        else:
+            act = np.random.choice(3, 1)[0]
+        # Take the action in the environment.
+        state, reward, dones, info = env.step(act)
+    return info
+
+
+def result(title=''):
+    equitylist = glob('results_pic/equity_*.csv')
+    random_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
+    for path in equitylist[1:]:
+        random_df2 = pd.read_csv(path)[['date', 'equity_tmp']]
+        random_df = random_df.merge(random_df2, how='left', on='date')
+    random_df = random_df.set_index(pd.to_datetime(random_df['date'])).drop(columns='date')
+    random_df.columns = range(len(random_df.columns))
+    # random_df.plot(legend=False, title=title)
+    plt.figure(figsize=(12, 7))
+    ax = sns.lineplot(data=random_df, legend=False, linewidth=1.25)
+    ax.set_title(title)
+    ax.axhline(100000, ls='-.', c='grey')
+    plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
+
+
+def price():
+    data = pd.read_csv('data/clean/WTX&.csv')
+    data = data.set_index(pd.to_datetime(data['Date']))
+    data = data.drop(columns=['Date', 'OI'])
+    mc = mpf.make_marketcolors(up='#fe3032', down='#00b060', inherit=True)
+    s = mpf.make_mpf_style(marketcolors=mc, gridstyle='-.', gridaxis='horizontal')
+    mpf.plot(data.loc['2000-01-01':], type='candle', volume=True, panel_ratios=(5, 1), style=s, figratio=(12, 7),
+             ylabel='', ylabel_lower='', tight_layout=True, datetime_format="'%y-%b-%d", xrotation=0,
+             returnfig=True)
+    plt.savefig('TAIEX Futures.png', bbox_inches='tight')
+    plt.show()
+
+
+def action_result():
+    action_dict = {
+        "hold": 0,
+        "buy_next": 1,
+        "sell_next": -1
+    }
+    action_list = glob('results_pic/actions_*.csv')
+    tmp = pd.read_csv(action_list[0])
+    tmp['action'] = tmp['action'].apply(lambda x: action_dict[x])
+    for path in action_list[1:]:
+        df2 = pd.read_csv(path)
+        df2['action'] = df2['action'].apply(lambda x: action_dict[x])
+        tmp = tmp.merge(df2, how='left', on='date')
+    tmp = tmp.set_index(pd.to_datetime(tmp['date']))
+    tmp.columns = range(len(tmp.columns))
+    tmp['mean'] = tmp.mean(axis=1).round(2)
+    # to multicharts
+    tmp['open'] = 0
+    tmp['high'] = tmp['mean'].apply(lambda x: x if x >= 0 else 0)
+    tmp['low'] = tmp['mean'].apply(lambda x: x if x < 0 else 0)
+    tmp['close'] = tmp['mean']
+    tmp[['open', 'high', 'low', 'close']].to_csv('mc.csv')
+    return tmp
 
 
 if __name__ == "__main__":
