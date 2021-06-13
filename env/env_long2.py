@@ -331,7 +331,7 @@ class TradingEnvLong(gym.Env):
 
             if self.drawdown:
                 self.reward = self.rtn_on_mdd
-                # self.reward = self.sharpe
+                #self.reward = self.sharpe - self.reward
             elif self.equity == self.init_equity:
                 self.reward = -999
 
