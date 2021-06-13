@@ -26,7 +26,7 @@ class TradingEnvLong(gym.Env):
             maximum number of shares to trade
     """
 
-    def __init__(self, df, cost=6, init_equity=100000, max_position=1, log=False, r='rtn_on_mdd',
+    def __init__(self, df, cost=6, init_equity=1000000, max_position=1, log=False, r='rtn_on_mdd',
                  min_movement_point=1,
                  big_point_value=200):
         self.df = df
@@ -226,22 +226,25 @@ class TradingEnvLong(gym.Env):
             # for thesis
             out = [self.equity_tmp - self.init_equity, self.rtn_on_mdd, self.profit_factor, round(self.cagr * 100, 2),
                    self.trade_num, round(self.winrate * 100, 2)]
-            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, {}
+            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, out
         else:
-            # settlement
-            if self.df['until_expiration'].iloc[self.current_idx] == 0 and self.position > 0:
-                c = self.prices['Close'].iloc[self.current_idx]
-                p = self._sell(c, self.position)
-                self.prices['signal_X'].iloc[self.current_idx] = self.prices['High'].iloc[self.current_idx] * 1.01
-                self.trades_list = self.trades_list.append(
-                    {'date': self.prices['Date'].iloc[self.current_idx],
-                     'action': 'settlement',
-                     'price': c,
-                     'contracts': 1,
-                     'profit': p - 2 * self.cost,
-                     'drawdown': self.equity_memory['equity_h'].max() - (
-                             self.init_equity + self.trades_list['profit'].sum() + p)
-                     }, ignore_index=True)
+            try:
+                # settlement
+                if self.df['until_expiration'].iloc[self.current_idx] == 0 and self.position > 0:
+                    c = self.prices['Close'].iloc[self.current_idx]
+                    p = self._sell(c, self.position)
+                    self.prices['signal_X'].iloc[self.current_idx] = self.prices['High'].iloc[self.current_idx] * 1.01
+                    self.trades_list = self.trades_list.append(
+                        {'date': self.prices['Date'].iloc[self.current_idx],
+                         'action': 'settlement',
+                         'price': c,
+                         'contracts': 1,
+                         'profit': p - 2 * self.cost,
+                         'drawdown': self.equity_memory['equity_h'].max() - (
+                                 self.init_equity + self.trades_list['profit'].sum() + p)
+                         }, ignore_index=True)
+            except:
+                pass
 
             if actions == 1:
                 if self.position < self.max_position:
@@ -296,7 +299,7 @@ class TradingEnvLong(gym.Env):
             tradelist = self.trades_list[self.trades_list['profit'].notna()]
             win = tradelist.profit >= 0
             loss = tradelist.profit < 0
-            self.rtn_on_mdd = np.round(self.equity / max(self.drawdown, 1), 2)
+            self.rtn_on_mdd = np.round((self.equity - self.init_equity) / max(self.drawdown, 1), 2)
             self.winrate = round(len(tradelist[win]) / len(tradelist), 4) if len(tradelist) else 0
             self.gross_profit = tradelist[win]['profit'].sum()
             self.gross_loss = tradelist[loss]['profit'].sum()
