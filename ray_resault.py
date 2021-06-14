@@ -6,6 +6,7 @@ from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
 
 from env.env_long2 import TradingEnvLong
+from utils import random_rollout, result, year_frac
 
 warnings.filterwarnings('ignore')
 
@@ -22,7 +23,7 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/ray_results/DQN_TestEnv_2021-06-14_14-39-40j684n7c5/checkpoint_000910/checkpoint-910'
+checkpoint_path = '/home/sean/ray_results/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
 
 # Restore agent
 agent = dqn.DQNTrainer(
@@ -61,11 +62,13 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-done = False
-obs = test_gym.reset()
-while not done:
-    action = agent.compute_action(obs)
-    obs, reward, done, tmp = test_gym.step(action)
-    test_gym.render()
+for _ in range(19):
+    done = False
+    obs = test_gym.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, tmp = test_gym.step(action)
+        #test_gym.render()
     out.append(tmp)
-
+out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
+result(title='dqn_Rainbow')
