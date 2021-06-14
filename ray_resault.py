@@ -6,7 +6,7 @@ from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
 
 from env.env_long2 import TradingEnvLong
-from utils import random_rollout, result, year_frac
+from utils import result, year_frac
 
 warnings.filterwarnings('ignore')
 
@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 def create_env(env_kwargs={}):
     data_df = pd.read_csv("/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/data_simple2.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    train = data_df[(data_df.Date >= '2000-01-01') & (data_df.Date < '2020-01-01')]
+    train = data_df[(data_df.Date >= '2000-01-01')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, log=True, **env_kwargs)
@@ -62,7 +62,7 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(19):
+for _ in range(20):
     done = False
     obs = test_gym.reset()
     while not done:
@@ -72,3 +72,7 @@ for _ in range(19):
     out.append(tmp)
 out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
 result(title='dqn_Rainbow')
+year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
+                     test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
+cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
+print(round(cagr * 100, 3))
