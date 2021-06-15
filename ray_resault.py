@@ -23,7 +23,8 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/ray_results/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
+checkpoint_path = '/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
+#'/home/sean/ray_results/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
 
 # Restore agent
 agent = dqn.DQNTrainer(
@@ -62,7 +63,7 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(20):
+for _ in range(1):
     done = False
     obs = test_gym.reset()
     while not done:
