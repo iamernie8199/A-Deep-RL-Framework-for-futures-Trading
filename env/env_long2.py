@@ -28,7 +28,8 @@ class TradingEnvLong(gym.Env):
 
     def __init__(self, df, cost=6, init_equity=1000000, max_position=1, log=False, r='rtn_on_mdd',
                  min_movement_point=1,
-                 big_point_value=200):
+                 big_point_value=200,
+                 cost_pct=0.001):
         self.df = df
         self.min_movement_point = min_movement_point
         self.big_point_value = big_point_value
@@ -42,15 +43,22 @@ class TradingEnvLong(gym.Env):
         self.bnh = self.init_equity
         # cost = (cost//2) tick/per trade considering slippage
         self.cost = self.min_movement_point * self.big_point_value * (cost // 2)
-
-        self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']]
+        # cost for stock or forex
+        self.cost_pct = cost_pct
+        try:
+            self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']]
+        except:
+            self.prices = self.df[['Date', 'Open', 'High', 'Low', 'Close', 'Volume']]
         self.prices['signal_E'] = np.nan
         self.prices['signal_X'] = np.nan
 
         # action spaces: 0: 'hold'/1: 'long'/2: 'sell'
         self.action_space = Discrete(3)
         # observation space: [-1, 1]
-        self.observation = self.df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI'])
+        try:
+            self.observation = self.df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI'])
+        except:
+            self.observation = self.df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume'])
         # feature + position
         self.observation_space = Box(low=-1.0, high=1.0, shape=(self.observation.shape[1] + 1,))
 
@@ -127,13 +135,16 @@ class TradingEnvLong(gym.Env):
 
         return np.append(self.observation.iloc[0].values, 0)
 
-    def commission_cost(self, contracts):
-        self.equity -= self.cost * contracts
+    def commission_cost(self, contracts, price):
+        if self.cost == 0:
+            self.equity -= price * self.cost_pct * contracts
+        else:
+            self.equity -= self.cost * contracts
 
     def _long(self, price, contracts):
         if self.position < self.max_position:
             self.position += contracts
-            self.commission_cost(contracts)
+            self.commission_cost(contracts,price)
             self.points += price * contracts
             self._entryprice = price
 
@@ -141,7 +152,7 @@ class TradingEnvLong(gym.Env):
         if self.position > 0:
             self.position -= contracts
             self.points -= price * contracts
-            self.commission_cost(contracts)
+            self.commission_cost(contracts,price)
             # Close out of long position
             if self.position == 0:
                 profit = -(self.points * self.big_point_value)
