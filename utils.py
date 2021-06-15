@@ -173,7 +173,7 @@ def vol_feature(d):
     :param d: df
     """
     d['vol_deg_change'] = d['Volume'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5).round(4)
-    d['vol_percentile'] = d['Volume'].rolling(len(df), min_periods=1).apply(
+    d['vol_percentile'] = d['Volume'].rolling(len(d), min_periods=1).apply(
         lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False).round(3)
     return d
 
@@ -184,7 +184,7 @@ def oi_feature(d):
     :param d: df
     """
     d['oi_deg_change'] = d['OI'].diff(1).apply(lambda x: (np.arctan2(x, 100) / np.pi) + 0.5).round(4)
-    d['oi_percentile'] = d['OI'].rolling(len(df), min_periods=1).apply(
+    d['oi_percentile'] = d['OI'].rolling(len(d), min_periods=1).apply(
         lambda x: pd.Series(x).rank(pct=True).values[-1], raw=False).round(3)
     return d
 
@@ -362,4 +362,5 @@ if __name__ == "__main__":
     df = settlement_cal(df)
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45).round(2)  # minmax scale, max=1.5 month
     # df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
-    df.to_csv("data_simple2.csv", index=False)
+    # df.rename(columns={"Date": "Timestamp"})
+    #df.to_csv("data_simple2.csv", index=False)
