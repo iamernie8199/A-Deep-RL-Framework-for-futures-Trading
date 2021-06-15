@@ -363,4 +363,4 @@ if __name__ == "__main__":
     df['until_expiration'] = df['until_expiration'].apply(lambda x: x / 45).round(2)  # minmax scale, max=1.5 month
     # df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
     # df.rename(columns={"Date": "Timestamp"})
-    #df.to_csv("data_simple2.csv", index=False)
+    df.to_csv("data_simple2.csv", index=False)
