@@ -13,7 +13,7 @@ warnings.filterwarnings('ignore')
 def create_env(env_kwargs={}):
     data_df = pd.read_csv("/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/BTCday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    train = data_df[(data_df.Date < '2021-01-01')]
+    train = data_df[(data_df.Date < '2020-01-01')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, big_point_value=1, cost=0, log=True, **env_kwargs)
