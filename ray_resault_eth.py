@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 
 def create_env(env_kwargs={}):
-    data_df = pd.read_csv("ETHday.csv")
+    data_df = pd.read_csv("data/clean/ETHday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
     train = data_df[(data_df.Date >= '2019-01-01')]
     # the index needs to start from 0
