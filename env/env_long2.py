@@ -362,7 +362,7 @@ class TradingEnvLong(gym.Env):
                 self.reward = self.rtn_on_mdd
                 # self.reward = self.sharpe - self.reward
             elif self.equity == self.init_equity:
-                self.reward = -999
+                self.reward = -10
 
             self.current_idx += 1
 
