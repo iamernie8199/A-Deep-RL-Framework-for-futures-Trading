@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 
 def create_env(env_kwargs={}):
-    data_df = pd.read_csv("/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/data_simple2.csv")
+    data_df = pd.read_csv("data_simple2.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
     train = data_df[(data_df.Date >= '2000-01-01')]
     # the index needs to start from 0
@@ -23,7 +23,7 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
+checkpoint_path = 'DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
 #'/home/sean/ray_results/DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
 
 # Restore agent
