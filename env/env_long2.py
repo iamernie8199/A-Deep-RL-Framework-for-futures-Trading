@@ -24,6 +24,19 @@ class TradingEnvLong(gym.Env):
             min_movement_point & big_point_value
         max_position: int
             maximum number of shares to trade
+        log: bool
+            whether output the log
+        min_movement_point: float
+            the min movement point of the futures contract
+            set 1 if not futures contract
+        big_point_value: float
+            the big point value of the futures contract
+            set 1 if not futures contract
+        cost: float
+            ticks number as the slippage/cost per trade
+            set 0 if not futures contract
+        cost_pct: float
+            cost for stock/forex
     """
 
     def __init__(self, df, cost=6, init_equity=1000000, max_position=1, log=False, r='rtn_on_mdd',
@@ -144,7 +157,7 @@ class TradingEnvLong(gym.Env):
     def _long(self, price, contracts):
         if self.position < self.max_position:
             self.position += contracts
-            self.commission_cost(contracts,price)
+            self.commission_cost(contracts, price)
             self.points += price * contracts
             self._entryprice = price
 
@@ -152,7 +165,7 @@ class TradingEnvLong(gym.Env):
         if self.position > 0:
             self.position -= contracts
             self.points -= price * contracts
-            self.commission_cost(contracts,price)
+            self.commission_cost(contracts, price)
             # Close out of long position
             if self.position == 0:
                 profit = -(self.points * self.big_point_value)
@@ -234,10 +247,15 @@ class TradingEnvLong(gym.Env):
             self._make_plot()
             if self.log:
                 self._make_log()
-            # for thesis
-            out = [self.equity_tmp - self.init_equity, self.rtn_on_mdd, self.profit_factor, round(self.cagr * 100, 2),
-                   self.trade_num, round(self.winrate * 100, 2)]
-            return np.append(self.observation.iloc[self.current_idx].values, self.position), self.reward, self.done, out
+                # for thesis
+                out = [self.equity_tmp - self.init_equity, self.rtn_on_mdd, self.profit_factor,
+                       round(self.cagr * 100, 2),
+                       self.trade_num, round(self.winrate * 100, 2)]
+                return np.append(self.observation.iloc[self.current_idx].values,
+                                 self.position), self.reward, self.done, out
+            else:
+                return np.append(self.observation.iloc[self.current_idx].values,
+                                 self.position), self.reward, self.done, {}
         else:
             try:
                 # settlement
@@ -342,7 +360,7 @@ class TradingEnvLong(gym.Env):
 
             if self.drawdown:
                 self.reward = self.rtn_on_mdd
-                #self.reward = self.sharpe - self.reward
+                # self.reward = self.sharpe - self.reward
             elif self.equity == self.init_equity:
                 self.reward = -999
 
