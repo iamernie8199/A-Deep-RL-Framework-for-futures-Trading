@@ -23,7 +23,8 @@ def create_env(env_kwargs={}):
 register_env("trainEnv", create_env)
 ray.init()
 # Restore agent
-checkpoint_path = '/home/sean/ray_results/DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
+checkpoint_path = 'DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
+# '/home/sean/ray_results/DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
 # '/home/sean/ray_results/DQN_trainEnv_2021-06-15_16-08-3735ec3_3b/checkpoint_000500/checkpoint-500'
 # '/home/sean/ray_results/DQN_trainEnv_2021-06-15_18-55-32yxp9433d/checkpoint_001000/checkpoint-1000'
 
