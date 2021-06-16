@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 
 def create_env(env_kwargs={}):
-    data_df = pd.read_csv("/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/LTCday.csv")
+    data_df = pd.read_csv("LTCday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
     train = data_df[(data_df.Date >= '2019-01-01')]
     # the index needs to start from 0
@@ -23,7 +23,8 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/ray_results/DQN_trainEnv_2021-06-16_20-34-07zfn10y3o/checkpoint_004601/checkpoint-4601'
+checkpoint_path = 'DQN_trainEnv_2021-06-16_20-34-07zfn10y3o/checkpoint_004601/checkpoint-4601'
+# '/home/sean/ray_results/DQN_trainEnv_2021-06-16_20-34-07zfn10y3o/checkpoint_004601/checkpoint-4601'
 # '/home/sean/ray_results/DQN_trainEnv_2021-06-16_03-06-12lbhm2aw3/checkpoint_004500/checkpoint-4500'
 
 # Restore agent
@@ -63,7 +64,7 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(19):
+for _ in range(1):
     done = False
     obs = test_gym.reset()
     while not done:
