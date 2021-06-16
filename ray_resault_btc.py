@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 
 
 def create_env(env_kwargs={}):
-    data_df = pd.read_csv("/home/sean/Docs/GitHub/A-Deep-RL-Framework-for-Index-futures-Trading/BTCday.csv")
+    data_df = pd.read_csv("BTCday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
     train = data_df[(data_df.Date >= '2019-01-01')]
     # the index needs to start from 0
@@ -23,8 +23,9 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/ray_results/DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
-#'/home/sean/ray_results/DQN_trainEnv_2021-06-15_18-55-32yxp9433d/checkpoint_001000/checkpoint-1000'
+checkpoint_path = 'DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
+# '/home/sean/ray_results/DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
+# '/home/sean/ray_results/DQN_trainEnv_2021-06-15_18-55-32yxp9433d/checkpoint_001000/checkpoint-1000'
 
 # Restore agent
 agent = dqn.DQNTrainer(
@@ -63,14 +64,14 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(20):
+for _ in range(1):
     done = False
     obs = test_gym.reset()
     while not done:
         action = agent.compute_action(obs)
         #action = 1
         obs, reward, done, tmp = test_gym.step(action)
-        test_gym.render()
+        # test_gym.render()
     out.append(tmp)
 out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
 #%%
