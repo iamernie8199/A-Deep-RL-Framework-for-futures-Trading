@@ -10,3 +10,5 @@ stable-baselines3~=1.0
 sb3-contrib~=1.0
 ray~=1.4.0
 seaborn~=0.11.1
+tensorflow~=2.3.0
+torch~=1.8.1
