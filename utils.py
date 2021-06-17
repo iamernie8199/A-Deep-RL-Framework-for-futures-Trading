@@ -17,14 +17,6 @@ from pykalman import KalmanFilter
 warnings.filterwarnings('ignore')
 
 
-class Futures:
-    def __init__(self,
-                 min_movement_point=1,
-                 big_point_value=200):
-        self.min_movement_point = min_movement_point
-        self.big_point_value = big_point_value
-
-
 def settlement_day():
     """
     更新結算日列表
