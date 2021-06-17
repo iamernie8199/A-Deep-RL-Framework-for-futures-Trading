@@ -16,7 +16,7 @@ def create_env(env_kwargs={}):
     train = data_df[(data_df.Date < '2020-01-01')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
-    env = TradingEnvLong(df=train, big_point_value=1, cost=0, log=True, **env_kwargs)
+    env = TradingEnvLong(df=train, big_point_value=1, cost=0, **env_kwargs)
     return env
 
 
