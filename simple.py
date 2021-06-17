@@ -5,7 +5,7 @@ import pandas as pd
 from sb3_contrib import QRDQN
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import EvalCallback
-from stable_baselines3.common.env_checker import check_env
+from stable_baselines3.common.vec_env import DummyVecEnv
 
 from env.env_long2 import TradingEnvLong
 
@@ -18,9 +18,8 @@ train = data_df[(data_df.Date >= '2010-01-01') & (data_df.Date < '2020-01-01')]
 train = train.reset_index(drop=True)
 
 env_kwargs = {}
-e_train_gym = TradingEnvLong(df=train, **env_kwargs)
-env_train, _ = e_train_gym.get_sb_env()
-check_env(e_train_gym)
+# e_train_gym = TradingEnvLong(df=train, **env_kwargs)
+env_train = DummyVecEnv([lambda: TradingEnvLong(df=train, **env_kwargs)])
 # Use deterministic actions for evaluation
 eval_callback = EvalCallback(env_train, best_model_save_path='./logs/',
                              log_path='./logs/', eval_freq=500,
