@@ -194,7 +194,7 @@ def candle(d):
     d['body'] = (np.abs(d['Open'] - d['Close']) / d['range']).fillna(1).round(2)
     d['upper_shadow'] = ((d['High'] - d[['Open', 'Close']].max(axis=1)) / d['range']).fillna(0).round(2)
     d['lower_shadow'] = ((d[['Open', 'Close']].min(axis=1) - d['Low']) / d['range']).fillna(0).round(2)
-    return d
+    return d.drop(columns=['range'])
 
 
 def norm_ohlc(d):
@@ -207,7 +207,7 @@ def norm_ohlc(d):
     d['norm_h'] = (np.log(d['High']) - tmp_o).round(4)
     d['norm_l'] = (np.log(d['Low']) - tmp_o).round(4)
     d['norm_c'] = (np.log(d['Close']) - tmp_o).round(4)
-    return d.drop(columns=['range'])
+    return d
 
 
 def basis(d):
