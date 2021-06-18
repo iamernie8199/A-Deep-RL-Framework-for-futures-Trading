@@ -344,7 +344,7 @@ class TradingEnvLong(gym.Env):
                 year_num = year_frac(self.equity_memory['date'].iloc[0],
                                      self.equity_memory[self.equity_memory.equity_tmp > 0]['date'].iloc[-1])
                 if self.equity > 0:
-                    self.cagr = (self.equity / self.init_equity) ** (1 / year_num) - 1
+                    self.cagr = (self.equity_tmp / self.init_equity) ** (1 / year_num) - 1
                 else:
                     self.cagr = (1 / self.init_equity) ** (1 / year_num) - 1
             lattest_profit = self.equity_memory['equity_tmp'].diff(1).values[-1]
