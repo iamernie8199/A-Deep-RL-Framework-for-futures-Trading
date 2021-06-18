@@ -19,8 +19,8 @@ class TradingEnvLong(gym.Env):
     ----------
         df: DataFrame
             input data
-        futures: futures class
-            min_movement_point & big_point_value
+        init_equity: float
+            init equity for backtest
         max_position: int
             maximum number of shares to trade
         log: bool
