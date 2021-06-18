@@ -73,7 +73,7 @@ for _ in range(20):
         #test_gym.render()
     out.append(tmp)
 out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-result(title='dqn_Rainbow')
+result(title='dqn_duel')
 year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
                      test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
 cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
