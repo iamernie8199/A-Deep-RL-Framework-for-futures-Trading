@@ -138,6 +138,9 @@ for _ in range(10):
         obs_test, rewards, done, tmp = e_test_gym.step(action)
         # env_test.render()
     out.append(tmp)
+result_plt(title='PPO')
+latexsummary(out)
+split_print()
 
 # ray
 register_env("TestEnv", create_env)
