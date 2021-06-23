@@ -372,7 +372,7 @@ def split_result(time1="2010-01-01", time2="2020-01-01"):
                't2_net', 't2_rtn_mdd', 't2_cagr', 't2_pf', 't2_num', 't2_rate',
                't3_net', 't3_rtn_mdd', 't3_cagr', 't3_pf', 't3_num', 't3_rate']
     result_df = result_df[columns]
-    return
+    return result_df
 
 
 def price():
