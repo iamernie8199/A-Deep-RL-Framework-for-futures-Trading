@@ -94,7 +94,7 @@ for _ in range(10):
     out.append(info[0])
 latexsummary(out)
 result_plt(title='random')
-split_print(path='results/random')
+split_print()
 shutil.move("results_pic", "results/random")
 # bnh
 out = []
