@@ -191,3 +191,4 @@ for _ in range(10):
 result_plt(title='dqn_double')
 latexsummary(out)
 split_print()
+shutil.move("results_pic", "results/Double-DQN")
