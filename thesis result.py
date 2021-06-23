@@ -133,3 +133,4 @@ for _ in range(10):
 result_plt(title='DQN')
 latexsummary(out)
 split_print()
+shutil.move("results_pic", "results/DQN")
