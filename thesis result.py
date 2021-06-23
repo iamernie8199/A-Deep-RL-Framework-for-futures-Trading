@@ -3,6 +3,9 @@ from datetime import datetime
 
 import pandas as pd
 from stable_baselines3 import DQN, PPO
+import ray
+from ray.tune.registry import register_env
+import ray.rllib.agents.dqn as dqn
 
 from env.env_long2 import TradingEnvLong
 from utils import random_rollout, result_plt, split_result, year_frac
@@ -88,17 +91,6 @@ for _ in range(10):
     info = random_rollout(test_gym)
     out.append(info[0])
 latexsummary(out)
-"""for i in range(len(out)):
-    print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
-          r"\\")
-year_num = year_frac(datetime.strptime("2000-01-01", "%Y-%m-%d"), datetime.strptime("2021-03-11", "%Y-%m-%d"))
-cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
-print('\hline')
-print('Avg. & ', end='')
-print(f"{int(out_df['Net Pnl'].mean())} & "
-      f"{round(out_df['rtn_on_MDD'].mean(), 4)} & {round(out_df['PF'].mean(), 4)}"
-      f" & {round(cagr, 4) * 100}\% & {out_df['num'].mean()} & {out_df['winning_rate'].mean()}\% "
-      r"\\")"""
 result_plt(title='random')
 split_print()
 shutil.move("results_pic", "results/random")
@@ -107,10 +99,6 @@ out = []
 info = random_rollout(test_gym, bnh=True)
 out.append(info[0])
 latexsummary(out)
-"""out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-for i in range(len(out)):
-    print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
-          r"\\")"""
 result_plt(title='BnH')
 split_print()
 shutil.move("results_pic", "results/BnH")
@@ -149,3 +137,9 @@ for _ in range(10):
         obs_test, rewards, done, tmp = e_test_gym.step(action)
         # env_test.render()
     out.append(tmp)
+
+# ray
+register_env("TestEnv", create_env)
+ray.init()
+# Double-DQN
+checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
