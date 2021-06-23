@@ -142,6 +142,7 @@ for _ in range(10):
 # ray
 register_env("TestEnv", create_env)
 ray.init()
+
 # Double-DQN
 checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
 agent = dqn.DQNTrainer(
@@ -179,7 +180,6 @@ agent = dqn.DQNTrainer(
 )
 agent.restore(checkpoint_path)
 out = []
-#%%
 for _ in range(10):
     done = False
     obs = test_gym.reset()
@@ -192,3 +192,49 @@ result_plt(title='dqn_double')
 latexsummary(out)
 split_print()
 shutil.move("results_pic", "results/Double-DQN")
+
+# Dueling-DQN
+checkpoint_path = 'DQN_TestEnv_2021-06-18_04-44-503upfoi0h/checkpoint_002000/checkpoint-2000'
+agent = dqn.DQNTrainer(
+    env="TestEnv",
+    config={
+        "env": "TradingEnv",
+        "log_level": "WARN",
+        "framework": "tf",
+        "ignore_worker_failures": True,
+        "num_gpus": 1,
+        "num_atoms": 1,
+        "v_min": -10000.0,
+        "v_max": 10000.0,
+        "noisy": False,
+        "dueling": True,
+        "hiddens": [512],
+        "n_step": 1,
+        "double_q": False,
+        "gamma": 0.9,
+        "lr": .0001,
+        "learning_starts": 10000,
+        "buffer_size": 50000,
+        "rollout_fragment_length": 4,
+        "train_batch_size": 32,
+        "exploration_config": {
+            "epsilon_timesteps": 2,
+            "final_epsilon": 0.0,
+        },
+        "target_network_update_freq": 500,
+        "prioritized_replay": False,
+        "prioritized_replay_alpha": 0.5,
+        "final_prioritized_replay_beta": 1.0,
+        "prioritized_replay_beta_annealing_timesteps": 400000,
+    }
+)
+agent.restore(checkpoint_path)
+out = []
+for _ in range(10):
+    done = False
+    obs = test_gym.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, tmp = test_gym.step(action)
+        #test_gym.render()
+    out.append(tmp)
