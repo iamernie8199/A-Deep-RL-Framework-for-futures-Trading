@@ -1,0 +1,32 @@
+{
+  "buffer_size": 50000,
+  "double_q": true,
+  "dueling": false,
+  "env": "TradingEnv",
+  "exploration_config": {
+    "epsilon_timesteps": 2,
+    "final_epsilon": 0.0
+  },
+  "final_prioritized_replay_beta": 1.0,
+  "framework": "tf",
+  "gamma": 0.9,
+  "hiddens": [
+    512
+  ],
+  "ignore_worker_failures": true,
+  "learning_starts": 10000,
+  "log_level": "WARN",
+  "lr": 0.0001,
+  "n_step": 1,
+  "noisy": false,
+  "num_atoms": 1,
+  "num_gpus": 1,
+  "prioritized_replay": false,
+  "prioritized_replay_alpha": 0.5,
+  "prioritized_replay_beta_annealing_timesteps": 400000,
+  "rollout_fragment_length": 4,
+  "target_network_update_freq": 500,
+  "train_batch_size": 32,
+  "v_max": 10000.0,
+  "v_min": -10000.0
+}
