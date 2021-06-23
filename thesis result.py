@@ -306,3 +306,8 @@ for _ in range(10):
         obs, reward, done, tmp = test_gym.step(action)
         # test_gym.render()
     out.append(tmp)
+result_plt(title='dqn_noisy')
+latexsummary(out)
+split_print()
+shutil.move("results_pic", "results/Noisy-DQN")
+
