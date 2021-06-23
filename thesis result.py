@@ -282,3 +282,12 @@ agent = dqn.DQNTrainer(
     }
 )
 agent.restore(checkpoint_path)
+out = []
+for _ in range(10):
+    done = False
+    obs = test_gym.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, tmp = test_gym.step(action)
+        # test_gym.render()
+    out.append(tmp)
