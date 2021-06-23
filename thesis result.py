@@ -3,6 +3,8 @@ from datetime import datetime
 
 import pandas as pd
 
+from stable_baselines3 import PPO, DQN
+
 from env.env_long2 import TradingEnvLong
 from utils import random_rollout, result_plt, split_result, year_frac
 
@@ -93,3 +95,23 @@ for i in range(len(out)):
           r"\\")
 result_plt(title='BnH')
 split_print()
+shutil.move("results_pic", "results/BnH")
+# DQN
+data_df = pd.read_csv("data_simple.csv")
+data_df['Date'] = pd.to_datetime(data_df['Date'])
+env_kwargs = {}
+e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
+model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+                    gamma=0.9, batch_size=4096, optimize_memory_usage=True, target_update_interval=5000)
+out = []
+# %%
+for _ in range(2):
+    obs_test = e_test_gym.reset()
+    done = False
+    while not done:
+        action, _states = model.predict(obs_test)
+        obs_test, rewards, done, tmp = e_test_gym.step(action)
+        # env_test.render()
+    out.append(tmp)
+out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
+
