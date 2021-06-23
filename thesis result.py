@@ -141,7 +141,7 @@ for _ in range(10):
 result_plt(title='PPO')
 latexsummary(out)
 split_print()
-
+shutil.move("results_pic", "results/PPO")
 # ray
 register_env("TestEnv", create_env)
 ray.init()
