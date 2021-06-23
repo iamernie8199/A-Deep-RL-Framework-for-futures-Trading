@@ -2,10 +2,11 @@ import shutil
 from datetime import datetime
 
 import pandas as pd
-from stable_baselines3 import DQN, PPO
 import ray
-from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
+from ray.tune.registry import register_env
+from sb3_contrib import QRDQN
+from stable_baselines3 import DQN, PPO
 
 from env.env_long2 import TradingEnvLong
 from utils import random_rollout, result_plt, split_result, year_frac
@@ -126,6 +127,20 @@ result_plt(title='DQN')
 latexsummary(out)
 split_print()
 shutil.move("results_pic", "results/DQN")
+
+# QR-DQN
+model = QRDQN.load("./logs/qrdqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+                   gamma=0.9)
+out = []
+for _ in range(10):
+    obs_test = e_test_gym.reset()
+    done = False
+    while not done:
+        action, _states = model.predict(obs_test)
+        obs_test, rewards, done, tmp = e_test_gym.step(action)
+        # env_test.render()
+    out.append(tmp)
+
 # PPO
 model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
                  gamma=0.8)
