@@ -6,7 +6,7 @@ from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
 
 from env.env_long2 import TradingEnvLong
-from utils import result, year_frac
+from utils import result_plt, year_frac
 
 warnings.filterwarnings('ignore')
 
@@ -78,7 +78,7 @@ out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num'
 for i in range(len(out)):
     print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% \\")
 # %%
-result(title='dqn_Rainbow_ltc')
+result_plt(title='dqn_Rainbow_ltc')
 year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
                      test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
 cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1

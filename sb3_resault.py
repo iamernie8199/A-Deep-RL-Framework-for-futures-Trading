@@ -6,7 +6,7 @@ from stable_baselines3 import PPO, DQN
 from sb3_contrib import QRDQN
 
 from env.env_long2 import TradingEnvLong
-from utils import random_rollout, result, year_frac
+from utils import random_rollout, result_plt, year_frac
 
 warnings.filterwarnings('ignore')
 
