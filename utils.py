@@ -3,6 +3,7 @@ import json
 import os
 # Disable the warnings
 import warnings
+from datetime import datetime
 from fractions import Fraction
 from glob import glob
 
@@ -263,20 +264,115 @@ def random_rollout(env, bnh=False):
     return info
 
 
-def result(title='', init_equity=1000000):
+def result_plt(title='', init_equity=1000000):
     equitylist = glob('results_pic/equity_*.csv')
-    random_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
+    tmp_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
     for path in equitylist[1:]:
-        random_df2 = pd.read_csv(path)[['date', 'equity_tmp']]
-        random_df = random_df.merge(random_df2, how='left', on='date')
-    random_df = random_df.set_index(pd.to_datetime(random_df['date'])).drop(columns='date')
-    random_df.columns = range(len(random_df.columns))
-    # random_df.plot(legend=False, title=title)
+        tmp_df2 = pd.read_csv(path)[['date', 'equity_tmp']]
+        tmp_df = tmp_df.merge(tmp_df2, how='left', on='date')
+    tmp_df = tmp_df.set_index(pd.to_datetime(tmp_df['date'])).drop(columns='date')
+    tmp_df.columns = range(len(tmp_df.columns))
     plt.figure(figsize=(12, 7))
-    ax = sns.lineplot(data=random_df, legend=False, linewidth=1.25)
+    ax = sns.lineplot(data=tmp_df, legend=False, linewidth=1.25)
     ax.set_title(title)
     ax.axhline(init_equity, ls='-.', c='grey')
+    ax.axvline(x=datetime.strptime("2010-01-01", "%Y-%m-%d"), ls=':', c='black')
+    ax.axvline(x=datetime.strptime("2020-01-01", "%Y-%m-%d"), ls=':', c='black')
     plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
+
+
+def split_result(time1="2010-01-01", time2="2020-01-01"):
+    equitylist = glob('results_pic/equity_*.csv')
+    tradelist = glob('results_pic/trades_list_*.csv')
+
+    def cagr_cal(df):
+        if np.sign(df.equity_tmp.values[-1]) == np.sign(df.equity_tmp.values[0]) and df.equity_tmp.values[0] > 0:
+            cagr = df.equity_tmp.values[-1] / df.equity_tmp.values[0]
+        elif df.equity_tmp.values[-1] < 0 and df.equity_tmp.values[0] > 0:
+            cagr = df[df.equity_tmp > 0].equity_tmp.values[-1] / df.equity_tmp.values[0]
+            cagr = cagr ** (1 / year_frac(df.index[0], df[df.equity_tmp > 0].index[-1])) - 1
+            return cagr
+        else:
+            cagr = df.equity_tmp.values[-1] - df.equity_tmp.values[0] + np.absolute(df.equity_tmp.values[0])
+            cagr /= np.absolute(df.equity_tmp.values[0])
+        cagr = cagr ** (1 / year_frac(df.index[0], df.index[-1])) - 1
+        return cagr
+
+    def net_cal(df):
+        return df.equity_tmp.values[-1] - df.equity_tmp.values[0]
+
+    def mdd_cal(df):
+        df['high'] = df['equity_tmp'].rolling(len(df), min_periods=1).max()
+        df['dd'] = df['high'] - df['equity_tmp']
+        return df['dd'].max()
+
+    result = []
+    for e in equitylist:
+        e_tmp_df = pd.read_csv(e)[['date', 'equity_tmp']]
+        e_tmp_df = e_tmp_df.set_index(pd.to_datetime(e_tmp_df['date'])).drop(columns='date')
+        tmp = []
+        e_tmp_df1 = e_tmp_df.loc[:time1]
+        e_tmp_df2 = e_tmp_df.loc[time1:time2]
+        e_tmp_df3 = e_tmp_df.loc[time2:]
+
+        net1 = net_cal(e_tmp_df1)
+        cagr1 = round(cagr_cal(e_tmp_df1), 4)
+        rtn_mdd1 = net1 / mdd_cal(e_tmp_df1)
+        tmp.extend([net1, rtn_mdd1, cagr1])
+
+        net2 = net_cal(e_tmp_df2)
+        cagr2 = round(cagr_cal(e_tmp_df2), 4)
+        rtn_mdd2 = net2 / mdd_cal(e_tmp_df2)
+        tmp.extend([net2, rtn_mdd2, cagr2])
+
+        net3 = net_cal(e_tmp_df3)
+        cagr3 = round(cagr_cal(e_tmp_df3), 4)
+        rtn_mdd3 = net3 / mdd_cal(e_tmp_df3)
+        tmp.extend([net3, rtn_mdd3, cagr3])
+        result.append(tmp)
+
+    result_df1 = pd.DataFrame(data=result,
+                              columns=['t1_net', 't1_rtn_mdd', 't1_cagr',
+                                       't2_net', 't2_rtn_mdd', 't2_cagr',
+                                       't3_net', 't3_rtn_mdd', 't3_cagr'])
+
+    def pf_cal(df):
+        win = df.profit > 0
+        loss = df.profit < 0
+        pf = float(df[win].sum() / -df[loss].sum())
+        winrate = len(df[win]) / len(df)
+        return pf, winrate
+
+    result = []
+    for t in tradelist:
+        t_tmp_df = pd.read_csv(t)[['date', 'profit']]
+        t_tmp_df = t_tmp_df[t_tmp_df['profit'].notna()]
+        t_tmp_df = t_tmp_df.set_index(pd.to_datetime(t_tmp_df['date'])).drop(columns='date')
+        t_tmp_df1 = t_tmp_df[:time1]
+        t_tmp_df2 = t_tmp_df[time1:time2]
+        t_tmp_df3 = t_tmp_df[time2:]
+        tmp = []
+        num1 = len(t_tmp_df1)
+        num2 = len(t_tmp_df2)
+        num3 = len(t_tmp_df3)
+        pf1, winrate1 = pf_cal(t_tmp_df1)
+        pf2, winrate2 = pf_cal(t_tmp_df2)
+        pf3, winrate3 = pf_cal(t_tmp_df3)
+        tmp.extend([pf1, num1, winrate1])
+        tmp.extend([pf2, num2, winrate2])
+        tmp.extend([pf3, num3, winrate3])
+        result.append(tmp)
+
+    result_df2 = pd.DataFrame(data=result,
+                              columns=['t1_pf', 't1_num', 't1_rate',
+                                       't2_pf', 't2_num', 't2_rate',
+                                       't3_pf', 't3_num', 't3_rate'])
+    result_df = pd.concat([result_df1, result_df2], axis=1)
+    columns = ['t1_net', 't1_rtn_mdd', 't1_cagr', 't1_pf', 't1_num', 't1_rate',
+               't2_net', 't2_rtn_mdd', 't2_cagr', 't2_pf', 't2_num', 't2_rate',
+               't3_net', 't3_rtn_mdd', 't3_cagr', 't3_pf', 't3_num', 't3_rate']
+    result_df = result_df[columns]
+    return
 
 
 def price():
