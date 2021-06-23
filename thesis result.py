@@ -2,8 +2,7 @@ import shutil
 from datetime import datetime
 
 import pandas as pd
-
-from stable_baselines3 import PPO, DQN
+from stable_baselines3 import DQN
 
 from env.env_long2 import TradingEnvLong
 from utils import random_rollout, result_plt, split_result, year_frac
@@ -42,23 +41,41 @@ def split_print():
     result = split_result().round(4)
     result_list = result.values.tolist()
     print("\multicolumn{7}{c}{'00 - '10} ", end=r"\\")
+    print()
     print("\hline")
     t = result[col1].apply(latexprint, axis=1)
     t = result[col1].mean().values.tolist()
     avg_print(t)
     print("\hline")
     print("\multicolumn{7}{c}{'10 - '20} ", end=r"\\")
+    print()
     print("\hline")
     t = result[col2].apply(latexprint, axis=1)
     t = result[col2].mean().values.tolist()
     avg_print(t)
     print("\hline")
     print("\multicolumn{7}{c}{'20 - '21} ", end=r"\\")
+    print()
     print("\hline")
     t = result[col3].apply(latexprint, axis=1)
     t = result[col3].mean().values.tolist()
     avg_print(t)
     print("\hline")
+
+
+def latexsummary(o):
+    out_df = pd.DataFrame(o, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
+    for i in range(len(out)):
+        print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
+              r"\\")
+    year_num = year_frac(datetime.strptime("2000-01-01", "%Y-%m-%d"), datetime.strptime("2021-03-11", "%Y-%m-%d"))
+    cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
+    print('\hline')
+    print('Avg. & ', end='')
+    print(f"{int(out_df['Net Pnl'].mean())} & "
+          f"{round(out_df['rtn_on_MDD'].mean(), 4)} & {round(out_df['PF'].mean(), 4)}"
+          f" & {round(cagr * 100, 2)}\% & {round(out_df['num'].mean(), 2)} & {round(out_df['winning_rate'].mean(), 2)}\% "
+          r"\\")
 
 
 test_gym = create_env()
@@ -70,8 +87,8 @@ out = []
 for _ in range(10):
     info = random_rollout(test_gym)
     out.append(info[0])
-out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-for i in range(len(out)):
+latexsummary(out)
+"""for i in range(len(out)):
     print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
           r"\\")
 year_num = year_frac(datetime.strptime("2000-01-01", "%Y-%m-%d"), datetime.strptime("2021-03-11", "%Y-%m-%d"))
@@ -81,7 +98,7 @@ print('Avg. & ', end='')
 print(f"{int(out_df['Net Pnl'].mean())} & "
       f"{round(out_df['rtn_on_MDD'].mean(), 4)} & {round(out_df['PF'].mean(), 4)}"
       f" & {round(cagr, 4) * 100}\% & {out_df['num'].mean()} & {out_df['winning_rate'].mean()}\% "
-      r"\\")
+      r"\\")"""
 result_plt(title='random')
 split_print()
 shutil.move("results_pic", "results/random")
@@ -89,10 +106,11 @@ shutil.move("results_pic", "results/random")
 out = []
 info = random_rollout(test_gym, bnh=True)
 out.append(info[0])
-out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
+latexsummary(out)
+"""out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
 for i in range(len(out)):
     print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
-          r"\\")
+          r"\\")"""
 result_plt(title='BnH')
 split_print()
 shutil.move("results_pic", "results/BnH")
@@ -102,10 +120,9 @@ data_df['Date'] = pd.to_datetime(data_df['Date'])
 env_kwargs = {}
 e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
 model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
-                    gamma=0.9, batch_size=4096, optimize_memory_usage=True, target_update_interval=5000)
+                 gamma=0.9, batch_size=4096, optimize_memory_usage=True, target_update_interval=5000)
 out = []
-# %%
-for _ in range(2):
+for _ in range(10):
     obs_test = e_test_gym.reset()
     done = False
     while not done:
@@ -113,5 +130,6 @@ for _ in range(2):
         obs_test, rewards, done, tmp = e_test_gym.step(action)
         # env_test.render()
     out.append(tmp)
-out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-
+result_plt(title='DQN')
+latexsummary(out)
+split_print()
