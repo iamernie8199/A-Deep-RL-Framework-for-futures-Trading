@@ -85,6 +85,7 @@ test_gym = create_env()
 col1 = ['t1_net', 't1_rtn_mdd', 't1_cagr', 't1_pf', 't1_num', 't1_rate']
 col2 = ['t2_net', 't2_rtn_mdd', 't2_cagr', 't2_pf', 't2_num', 't2_rate']
 col3 = ['t3_net', 't3_rtn_mdd', 't3_cagr', 't3_pf', 't3_num', 't3_rate']
+
 # random
 out = []
 for _ in range(10):
@@ -143,3 +144,46 @@ register_env("TestEnv", create_env)
 ray.init()
 # Double-DQN
 checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
+agent = dqn.DQNTrainer(
+    env="TestEnv",
+    config={
+        "env": "TestEnv",
+        "log_level": "WARN",
+        "framework": "tf",
+        "ignore_worker_failures": True,
+        "num_gpus": 1,
+        "num_atoms": 1,
+        "v_min": -10000.0,
+        "v_max": 10000.0,
+        "noisy": False,
+        "dueling": False,
+        "hiddens": [512],
+        "n_step": 1,
+        "double_q": True,
+        "gamma": 0.9,
+        "lr": .0001,
+        "learning_starts": 10000,
+        "buffer_size": 50000,
+        "rollout_fragment_length": 4,
+        "train_batch_size": 32,
+        "exploration_config": {
+            "epsilon_timesteps": 2,
+            "final_epsilon": 0.0,
+        },
+        "target_network_update_freq": 500,
+        "prioritized_replay": False,
+        "prioritized_replay_alpha": 0.5,
+        "final_prioritized_replay_beta": 1.0,
+        "prioritized_replay_beta_annealing_timesteps": 400000,
+    }
+)
+agent.restore(checkpoint_path)
+out = []
+for _ in range(10):
+    done = False
+    obs = test_gym.reset()
+    while not done:
+        action = agent.compute_action(obs)
+        obs, reward, done, tmp = test_gym.step(action)
+        #test_gym.render()
+    out.append(tmp)
