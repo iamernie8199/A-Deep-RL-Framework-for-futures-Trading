@@ -140,6 +140,10 @@ for _ in range(10):
         obs_test, rewards, done, tmp = e_test_gym.step(action)
         # env_test.render()
     out.append(tmp)
+result_plt(title='QR-DQN')
+latexsummary(out)
+split_print()
+shutil.move("results_pic", "results/QR-DQN")
 
 # PPO
 model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
