@@ -68,7 +68,7 @@ def split_print():
 
 def latexsummary(o):
     out_df = pd.DataFrame(o, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-    for i in range(len(out)):
+    for i in range(len(o)):
         print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
               r"\\")
     year_num = year_frac(datetime.strptime("2000-01-01", "%Y-%m-%d"), datetime.strptime("2021-03-11", "%Y-%m-%d"))
@@ -179,6 +179,7 @@ agent = dqn.DQNTrainer(
 )
 agent.restore(checkpoint_path)
 out = []
+#%%
 for _ in range(10):
     done = False
     obs = test_gym.reset()
@@ -187,3 +188,6 @@ for _ in range(10):
         obs, reward, done, tmp = test_gym.step(action)
         #test_gym.render()
     out.append(tmp)
+result_plt(title='dqn_double')
+latexsummary(out)
+split_print()
