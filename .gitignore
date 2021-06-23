@@ -2,10 +2,9 @@
 venv
 data/raw
 .vscode/settings.json
-*.png
 trading_2_tensorboard
 __pycache__
 *.csv
 *.npz
 *.zip
-*.csv
+*.png
