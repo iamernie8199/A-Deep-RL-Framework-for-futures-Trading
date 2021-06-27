@@ -41,8 +41,11 @@ def avg_print(tmp):
           r"\\")
 
 
-def split_print():
-    result = split_result().round(4)
+def split_print(path='results_pic'):
+    col1 = ['t1_net', 't1_rtn_mdd', 't1_pf', 't1_cagr', 't1_num', 't1_rate']
+    col2 = ['t2_net', 't2_rtn_mdd', 't2_pf', 't2_cagr', 't2_num', 't2_rate']
+    col3 = ['t3_net', 't3_rtn_mdd', 't3_pf', 't3_cagr', 't3_num', 't3_rate']
+    result = split_result(path=path).round(4)
     result_list = result.values.tolist()
     print("\multicolumn{7}{c}{'00 - '10} ", end=r"\\")
     print()
@@ -83,9 +86,6 @@ def latexsummary(o):
 
 
 test_gym = create_env()
-col1 = ['t1_net', 't1_rtn_mdd', 't1_cagr', 't1_pf', 't1_num', 't1_rate']
-col2 = ['t2_net', 't2_rtn_mdd', 't2_cagr', 't2_pf', 't2_num', 't2_rate']
-col3 = ['t3_net', 't3_rtn_mdd', 't3_cagr', 't3_pf', 't3_num', 't3_rate']
 
 # random
 out = []
@@ -358,6 +358,7 @@ for _ in range(10):
         obs, reward, done, tmp = test_gym.step(action)
         # test_gym.render()
     out.append(tmp)
+result_plt(title='dqn_Rainbow')
 latexsummary(out)
 split_print()
 shutil.move("results_pic", "results/Rainbow")

@@ -281,9 +281,9 @@ def result_plt(title='', init_equity=1000000):
     plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
 
 
-def split_result(time1="2010-01-01", time2="2020-01-01"):
-    equitylist = glob('results_pic/equity_*.csv')
-    tradelist = glob('results_pic/trades_list_*.csv')
+def split_result(time1="2010-01-01", time2="2020-01-01", path='results_pic'):
+    equitylist = glob(f"{path}/equity_*.csv")
+    tradelist = glob(f"{path}/trades_list_*.csv")
 
     def cagr_cal(df):
         if np.sign(df.equity_tmp.values[-1]) == np.sign(df.equity_tmp.values[0]) and df.equity_tmp.values[0] > 0:
@@ -368,9 +368,9 @@ def split_result(time1="2010-01-01", time2="2020-01-01"):
                                        't2_pf', 't2_num', 't2_rate',
                                        't3_pf', 't3_num', 't3_rate'])
     result_df = pd.concat([result_df1, result_df2], axis=1)
-    columns = ['t1_net', 't1_rtn_mdd', 't1_cagr', 't1_pf', 't1_num', 't1_rate',
-               't2_net', 't2_rtn_mdd', 't2_cagr', 't2_pf', 't2_num', 't2_rate',
-               't3_net', 't3_rtn_mdd', 't3_cagr', 't3_pf', 't3_num', 't3_rate']
+    columns = ['t1_net', 't1_rtn_mdd', 't1_pf', 't1_cagr', 't1_num', 't1_rate',
+               't2_net', 't2_rtn_mdd', 't2_pf', 't2_cagr', 't2_num', 't2_rate',
+               't3_net', 't3_rtn_mdd', 't3_pf', 't3_cagr', 't3_num', 't3_rate']
     result_df = result_df[columns]
     return result_df
 
