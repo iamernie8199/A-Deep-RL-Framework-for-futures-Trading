@@ -264,21 +264,22 @@ def random_rollout(env, bnh=False):
     return info
 
 
-def result_plt(title='', init_equity=1000000):
-    equitylist = glob('results_pic/equity_*.csv')
+def result_plt(title='', init_equity=1000000, path='results_pic'):
+    equitylist = glob(f'{path}/equity_*.csv')
     tmp_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
-    for path in equitylist[1:]:
-        tmp_df2 = pd.read_csv(path)[['date', 'equity_tmp']]
+    for p in equitylist[1:]:
+        tmp_df2 = pd.read_csv(p)[['date', 'equity_tmp']]
         tmp_df = tmp_df.merge(tmp_df2, how='left', on='date')
     tmp_df = tmp_df.set_index(pd.to_datetime(tmp_df['date'])).drop(columns='date')
     tmp_df.columns = range(len(tmp_df.columns))
     plt.figure(figsize=(12, 7))
     ax = sns.lineplot(data=tmp_df, legend=False, linewidth=1.25)
     ax.set_title(title)
+    ax.set_ylabel('Equity')
     ax.axhline(init_equity, ls='-.', c='grey')
     ax.axvline(x=datetime.strptime("2010-01-01", "%Y-%m-%d"), ls=':', c='black')
     ax.axvline(x=datetime.strptime("2020-01-01", "%Y-%m-%d"), ls=':', c='black')
-    plt.savefig('results_pic/{}.png'.format(title), bbox_inches='tight')
+    plt.savefig(f'{path}/{title}.png', bbox_inches='tight')
 
 
 def split_result(time1="2010-01-01", time2="2020-01-01", path='results_pic'):
