@@ -38,10 +38,11 @@ agent = ppo.PPOTrainer(
         "sgd_minibatch_size": 32768,
         "horizon": 5000,
         "train_batch_size": 320000,
+        "vf_clip_param": 5000.0,
         "model": {
             "vf_share_layers": False,
         },
-        "num_workers": 8,
+        "num_workers": 10,
     }
 )
 
