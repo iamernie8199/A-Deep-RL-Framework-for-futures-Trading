@@ -85,280 +85,281 @@ def latexsummary(o):
           r"\\")
 
 
-test_gym = create_env()
+if __name__ == "__main__":
+    test_gym = create_env()
 
-# random
-out = []
-for _ in range(10):
-    info = random_rollout(test_gym)
+    # random
+    out = []
+    for _ in range(10):
+        info = random_rollout(test_gym)
+        out.append(info[0])
+    latexsummary(out)
+    result_plt(title='random')
+    split_print()
+    shutil.move("results_pic", "results/random")
+    # bnh
+    out = []
+    info = random_rollout(test_gym, bnh=True)
     out.append(info[0])
-latexsummary(out)
-result_plt(title='random')
-split_print()
-shutil.move("results_pic", "results/random")
-# bnh
-out = []
-info = random_rollout(test_gym, bnh=True)
-out.append(info[0])
-latexsummary(out)
-result_plt(title='BnH')
-split_print()
-shutil.move("results_pic", "results/BnH")
+    latexsummary(out)
+    result_plt(title='BnH')
+    split_print()
+    shutil.move("results_pic", "results/BnH")
 
-# sb3 env
-data_df = pd.read_csv("data_simple.csv")
-data_df['Date'] = pd.to_datetime(data_df['Date'])
-env_kwargs = {}
-e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
+    # sb3 env
+    data_df = pd.read_csv("data_simple.csv")
+    data_df['Date'] = pd.to_datetime(data_df['Date'])
+    env_kwargs = {}
+    e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
 
-# DQN
-model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
-                 gamma=0.9, batch_size=4096, optimize_memory_usage=True, target_update_interval=5000)
-out = []
-for _ in range(10):
-    obs_test = e_test_gym.reset()
-    done = False
-    while not done:
-        action, _states = model.predict(obs_test)
-        obs_test, rewards, done, tmp = e_test_gym.step(action)
-        # env_test.render()
-    out.append(tmp)
-result_plt(title='DQN')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/DQN")
+    # DQN
+    model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+                     gamma=0.9, batch_size=4096, optimize_memory_usage=True, target_update_interval=5000)
+    out = []
+    for _ in range(10):
+        obs_test = e_test_gym.reset()
+        done = False
+        while not done:
+            action, _states = model.predict(obs_test)
+            obs_test, rewards, done, tmp = e_test_gym.step(action)
+            # env_test.render()
+        out.append(tmp)
+    result_plt(title='DQN')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/DQN")
 
-# QR-DQN
-model = QRDQN.load("./logs/qrdqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
-                   gamma=0.9)
-out = []
-for _ in range(10):
-    obs_test = e_test_gym.reset()
-    done = False
-    while not done:
-        action, _states = model.predict(obs_test)
-        obs_test, rewards, done, tmp = e_test_gym.step(action)
-        # env_test.render()
-    out.append(tmp)
-result_plt(title='QR-DQN')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/QR-DQN")
+    # QR-DQN
+    model = QRDQN.load("./logs/qrdqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+                       gamma=0.9)
+    out = []
+    for _ in range(10):
+        obs_test = e_test_gym.reset()
+        done = False
+        while not done:
+            action, _states = model.predict(obs_test)
+            obs_test, rewards, done, tmp = e_test_gym.step(action)
+            # env_test.render()
+        out.append(tmp)
+    result_plt(title='QR-DQN')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/QR-DQN")
 
-# PPO
-model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
-                 gamma=0.8)
-out = []
-for _ in range(10):
-    obs_test = e_test_gym.reset()
-    done = False
-    while not done:
-        action, _states = model.predict(obs_test)
-        obs_test, rewards, done, tmp = e_test_gym.step(action)
-        # env_test.render()
-    out.append(tmp)
-result_plt(title='PPO')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/PPO")
-# ray
-register_env("TestEnv", create_env)
-ray.init()
+    # PPO
+    model = PPO.load("./logs/ppo_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+                     gamma=0.8)
+    out = []
+    for _ in range(10):
+        obs_test = e_test_gym.reset()
+        done = False
+        while not done:
+            action, _states = model.predict(obs_test)
+            obs_test, rewards, done, tmp = e_test_gym.step(action)
+            # env_test.render()
+        out.append(tmp)
+    result_plt(title='PPO')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/PPO")
+    # ray
+    register_env("TestEnv", create_env)
+    ray.init()
 
-# Double-DQN
-checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
-agent = dqn.DQNTrainer(
-    env="TestEnv",
-    config={
-        "env": "TestEnv",
-        "log_level": "WARN",
-        "framework": "tf",
-        "ignore_worker_failures": True,
-        "num_gpus": 1,
-        "num_atoms": 1,
-        "v_min": -10000.0,
-        "v_max": 10000.0,
-        "noisy": False,
-        "dueling": False,
-        "hiddens": [512],
-        "n_step": 1,
-        "double_q": True,
-        "gamma": 0.9,
-        "lr": .0001,
-        "learning_starts": 10000,
-        "buffer_size": 50000,
-        "rollout_fragment_length": 4,
-        "train_batch_size": 32,
-        "exploration_config": {
-            "epsilon_timesteps": 2,
-            "final_epsilon": 0.0,
-        },
-        "target_network_update_freq": 500,
-        "prioritized_replay": False,
-        "prioritized_replay_alpha": 0.5,
-        "final_prioritized_replay_beta": 1.0,
-        "prioritized_replay_beta_annealing_timesteps": 400000,
-    }
-)
-agent.restore(checkpoint_path)
-out = []
-for _ in range(10):
-    done = False
-    obs = test_gym.reset()
-    while not done:
-        action = agent.compute_action(obs)
-        obs, reward, done, tmp = test_gym.step(action)
-        # test_gym.render()
-    out.append(tmp)
-result_plt(title='dqn_double')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/Double-DQN")
+    # Double-DQN
+    checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
+    agent = dqn.DQNTrainer(
+        env="TestEnv",
+        config={
+            "env": "TestEnv",
+            "log_level": "WARN",
+            "framework": "tf",
+            "ignore_worker_failures": True,
+            "num_gpus": 1,
+            "num_atoms": 1,
+            "v_min": -10000.0,
+            "v_max": 10000.0,
+            "noisy": False,
+            "dueling": False,
+            "hiddens": [512],
+            "n_step": 1,
+            "double_q": True,
+            "gamma": 0.9,
+            "lr": .0001,
+            "learning_starts": 10000,
+            "buffer_size": 50000,
+            "rollout_fragment_length": 4,
+            "train_batch_size": 32,
+            "exploration_config": {
+                "epsilon_timesteps": 2,
+                "final_epsilon": 0.0,
+            },
+            "target_network_update_freq": 500,
+            "prioritized_replay": False,
+            "prioritized_replay_alpha": 0.5,
+            "final_prioritized_replay_beta": 1.0,
+            "prioritized_replay_beta_annealing_timesteps": 400000,
+        }
+    )
+    agent.restore(checkpoint_path)
+    out = []
+    for _ in range(10):
+        done = False
+        obs = test_gym.reset()
+        while not done:
+            action = agent.compute_action(obs)
+            obs, reward, done, tmp = test_gym.step(action)
+            # test_gym.render()
+        out.append(tmp)
+    result_plt(title='dqn_double')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/Double-DQN")
 
-# Dueling-DQN
-checkpoint_path = 'DQN_TestEnv_2021-06-18_04-44-503upfoi0h/checkpoint_002000/checkpoint-2000'
-agent = dqn.DQNTrainer(
-    env="TestEnv",
-    config={
-        "env": "TradingEnv",
-        "log_level": "WARN",
-        "framework": "tf",
-        "ignore_worker_failures": True,
-        "num_gpus": 1,
-        "num_atoms": 1,
-        "v_min": -10000.0,
-        "v_max": 10000.0,
-        "noisy": False,
-        "dueling": True,
-        "hiddens": [512],
-        "n_step": 1,
-        "double_q": False,
-        "gamma": 0.9,
-        "lr": .0001,
-        "learning_starts": 10000,
-        "buffer_size": 50000,
-        "rollout_fragment_length": 4,
-        "train_batch_size": 32,
-        "exploration_config": {
-            "epsilon_timesteps": 2,
-            "final_epsilon": 0.0,
-        },
-        "target_network_update_freq": 500,
-        "prioritized_replay": False,
-        "prioritized_replay_alpha": 0.5,
-        "final_prioritized_replay_beta": 1.0,
-        "prioritized_replay_beta_annealing_timesteps": 400000,
-    }
-)
-agent.restore(checkpoint_path)
-out = []
-for _ in range(10):
-    done = False
-    obs = test_gym.reset()
-    while not done:
-        action = agent.compute_action(obs)
-        obs, reward, done, tmp = test_gym.step(action)
-        # test_gym.render()
-    out.append(tmp)
-result_plt(title='dqn_duel')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/Dueling-DQN")
+    # Dueling-DQN
+    checkpoint_path = 'DQN_TestEnv_2021-06-18_04-44-503upfoi0h/checkpoint_002000/checkpoint-2000'
+    agent = dqn.DQNTrainer(
+        env="TestEnv",
+        config={
+            "env": "TradingEnv",
+            "log_level": "WARN",
+            "framework": "tf",
+            "ignore_worker_failures": True,
+            "num_gpus": 1,
+            "num_atoms": 1,
+            "v_min": -10000.0,
+            "v_max": 10000.0,
+            "noisy": False,
+            "dueling": True,
+            "hiddens": [512],
+            "n_step": 1,
+            "double_q": False,
+            "gamma": 0.9,
+            "lr": .0001,
+            "learning_starts": 10000,
+            "buffer_size": 50000,
+            "rollout_fragment_length": 4,
+            "train_batch_size": 32,
+            "exploration_config": {
+                "epsilon_timesteps": 2,
+                "final_epsilon": 0.0,
+            },
+            "target_network_update_freq": 500,
+            "prioritized_replay": False,
+            "prioritized_replay_alpha": 0.5,
+            "final_prioritized_replay_beta": 1.0,
+            "prioritized_replay_beta_annealing_timesteps": 400000,
+        }
+    )
+    agent.restore(checkpoint_path)
+    out = []
+    for _ in range(10):
+        done = False
+        obs = test_gym.reset()
+        while not done:
+            action = agent.compute_action(obs)
+            obs, reward, done, tmp = test_gym.step(action)
+            # test_gym.render()
+        out.append(tmp)
+    result_plt(title='dqn_duel')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/Dueling-DQN")
 
-# Noisy-DQN
-checkpoint_path = 'DQN_TestEnv_2021-06-18_15-33-25_c944tj8/checkpoint_000500/checkpoint-500'
-agent = dqn.DQNTrainer(
-    env="TestEnv",
-    config={
-        "env": "TradingEnv",
-        "log_level": "WARN",
-        "framework": "tf",
-        "ignore_worker_failures": True,
-        "num_gpus": 1,
-        "num_atoms": 1,
-        "noisy": True,
-        "v_min": -10000.0,
-        "v_max": 10000.0,
-        "gamma": 0.9,
-        "lr": .0001,
-        "dueling": False,
-        "hiddens": [512],
-        "learning_starts": 10000,
-        "buffer_size": 50000,
-        "rollout_fragment_length": 4,
-        "train_batch_size": 32,
-        "double_q": False,
-        "exploration_config": {
-            "epsilon_timesteps": 2,
-            "final_epsilon": 0.0,
-        },
-        "target_network_update_freq": 500,
-        "prioritized_replay": False,
-        "prioritized_replay_alpha": 0.5,
-        "final_prioritized_replay_beta": 1.0,
-        "prioritized_replay_beta_annealing_timesteps": 400000,
-        "n_step": 1
-    }
-)
-agent.restore(checkpoint_path)
-out = []
-for _ in range(10):
-    done = False
-    obs = test_gym.reset()
-    while not done:
-        action = agent.compute_action(obs)
-        obs, reward, done, tmp = test_gym.step(action)
-        # test_gym.render()
-    out.append(tmp)
-result_plt(title='dqn_noisy')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/Noisy-DQN")
+    # Noisy-DQN
+    checkpoint_path = 'DQN_TestEnv_2021-06-18_15-33-25_c944tj8/checkpoint_000500/checkpoint-500'
+    agent = dqn.DQNTrainer(
+        env="TestEnv",
+        config={
+            "env": "TradingEnv",
+            "log_level": "WARN",
+            "framework": "tf",
+            "ignore_worker_failures": True,
+            "num_gpus": 1,
+            "num_atoms": 1,
+            "noisy": True,
+            "v_min": -10000.0,
+            "v_max": 10000.0,
+            "gamma": 0.9,
+            "lr": .0001,
+            "dueling": False,
+            "hiddens": [512],
+            "learning_starts": 10000,
+            "buffer_size": 50000,
+            "rollout_fragment_length": 4,
+            "train_batch_size": 32,
+            "double_q": False,
+            "exploration_config": {
+                "epsilon_timesteps": 2,
+                "final_epsilon": 0.0,
+            },
+            "target_network_update_freq": 500,
+            "prioritized_replay": False,
+            "prioritized_replay_alpha": 0.5,
+            "final_prioritized_replay_beta": 1.0,
+            "prioritized_replay_beta_annealing_timesteps": 400000,
+            "n_step": 1
+        }
+    )
+    agent.restore(checkpoint_path)
+    out = []
+    for _ in range(10):
+        done = False
+        obs = test_gym.reset()
+        while not done:
+            action = agent.compute_action(obs)
+            obs, reward, done, tmp = test_gym.step(action)
+            # test_gym.render()
+        out.append(tmp)
+    result_plt(title='dqn_noisy')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/Noisy-DQN")
 
-# Rainbow-DQN
-checkpoint_path = 'DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
-agent = dqn.DQNTrainer(
-    env="TestEnv",
-    config={
-        "env": "TradingEnv",
-        "log_level": "WARN",
-        "framework": "tf",
-        "ignore_worker_failures": True,
-        "num_gpus": 1,
-        "num_atoms": 51,
-        "noisy": True,
-        "v_min": -10000.0,
-        "v_max": 10000.0,
-        "gamma": 0.9,
-        "lr": .0001,
-        "hiddens": [512],
-        "learning_starts": 10000,
-        "buffer_size": 50000,
-        "rollout_fragment_length": 4,
-        "train_batch_size": 32,
-        "exploration_config": {
-            "epsilon_timesteps": 2,
-            "final_epsilon": 0.0,
-        },
-        "target_network_update_freq": 500,
-        "prioritized_replay": True,
-        "prioritized_replay_alpha": 0.5,
-        "final_prioritized_replay_beta": 1.0,
-        "prioritized_replay_beta_annealing_timesteps": 400000,
-        "n_step": 3
-    }
-)
-agent.restore(checkpoint_path)
-out = []
-for _ in range(10):
-    done = False
-    obs = test_gym.reset()
-    while not done:
-        action = agent.compute_action(obs)
-        obs, reward, done, tmp = test_gym.step(action)
-        # test_gym.render()
-    out.append(tmp)
-result_plt(title='dqn_Rainbow')
-latexsummary(out)
-split_print()
-shutil.move("results_pic", "results/Rainbow")
+    # Rainbow-DQN
+    checkpoint_path = 'DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
+    agent = dqn.DQNTrainer(
+        env="TestEnv",
+        config={
+            "env": "TradingEnv",
+            "log_level": "WARN",
+            "framework": "tf",
+            "ignore_worker_failures": True,
+            "num_gpus": 1,
+            "num_atoms": 51,
+            "noisy": True,
+            "v_min": -10000.0,
+            "v_max": 10000.0,
+            "gamma": 0.9,
+            "lr": .0001,
+            "hiddens": [512],
+            "learning_starts": 10000,
+            "buffer_size": 50000,
+            "rollout_fragment_length": 4,
+            "train_batch_size": 32,
+            "exploration_config": {
+                "epsilon_timesteps": 2,
+                "final_epsilon": 0.0,
+            },
+            "target_network_update_freq": 500,
+            "prioritized_replay": True,
+            "prioritized_replay_alpha": 0.5,
+            "final_prioritized_replay_beta": 1.0,
+            "prioritized_replay_beta_annealing_timesteps": 400000,
+            "n_step": 3
+        }
+    )
+    agent.restore(checkpoint_path)
+    out = []
+    for _ in range(10):
+        done = False
+        obs = test_gym.reset()
+        while not done:
+            action = agent.compute_action(obs)
+            obs, reward, done, tmp = test_gym.step(action)
+            # test_gym.render()
+        out.append(tmp)
+    result_plt(title='dqn_Rainbow')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/Rainbow")
