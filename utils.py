@@ -264,7 +264,7 @@ def random_rollout(env, bnh=False):
     return info
 
 
-def result_plt(title='', init_equity=1000000, path='results_pic'):
+def result_plt(title='', init_equity=1000000, path='results_pic', time1='2010-01-01', time2="2020-01-01"):
     equitylist = glob(f'{path}/equity_*.csv')
     tmp_df = pd.read_csv(equitylist[0])[['date', 'equity_tmp']]
     for p in equitylist[1:]:
@@ -277,8 +277,10 @@ def result_plt(title='', init_equity=1000000, path='results_pic'):
     ax.set_title(title)
     ax.set_ylabel('Equity')
     ax.axhline(init_equity, ls='-.', c='grey')
-    ax.axvline(x=datetime.strptime("2010-01-01", "%Y-%m-%d"), ls=':', c='black')
-    ax.axvline(x=datetime.strptime("2020-01-01", "%Y-%m-%d"), ls=':', c='black')
+    if time1 is not None:
+        ax.axvline(x=datetime.strptime(time1, "%Y-%m-%d"), ls=':', c='black')
+    if time2 is not None:
+        ax.axvline(x=datetime.strptime(time2, "%Y-%m-%d"), ls=':', c='black')
     plt.savefig(f'{path}/{title}.png', bbox_inches='tight')
 
 
@@ -410,7 +412,7 @@ def action_result():
     tmp['high'] = tmp['mean'].apply(lambda x: x if x >= 0 else 0)
     tmp['low'] = tmp['mean'].apply(lambda x: x if x < 0 else 0)
     tmp['close'] = tmp['mean']
-    tmp[['open', 'high', 'low', 'close']].to_csv('mc.csv')
+    tmp[['open', 'high', 'low', 'close']].to_csv('rainbow_btc2.csv')
     return tmp
 
 
