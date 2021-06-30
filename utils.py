@@ -391,7 +391,7 @@ def price():
     plt.show()
 
 
-def action_result():
+def action_result(title='mc'):
     action_dict = {
         "hold": 0,
         "buy_next": 1,
@@ -412,7 +412,7 @@ def action_result():
     tmp['high'] = tmp['mean'].apply(lambda x: x if x >= 0 else 0)
     tmp['low'] = tmp['mean'].apply(lambda x: x if x < 0 else 0)
     tmp['close'] = tmp['mean']
-    tmp[['open', 'high', 'low', 'close']].to_csv('rainbow_btc2.csv')
+    tmp[['open', 'high', 'low', 'close']].to_csv(f'{title}.csv')
     return tmp
 
 
