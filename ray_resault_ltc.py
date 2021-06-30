@@ -6,7 +6,7 @@ from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
 
 from env.env_long2 import TradingEnvLong
-from utils import result_plt, year_frac
+from utils import result_plt, year_frac, action_result
 
 warnings.filterwarnings('ignore')
 
@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 def create_env(env_kwargs={}):
     data_df = pd.read_csv("data/clean/LTCday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    train = data_df[(data_df.Date >= '2019-01-01')]
+    train = data_df[(data_df.Date >= '2017-01-01')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, big_point_value=1, cost=0, log=True, **env_kwargs)
@@ -64,7 +64,7 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(1):
+for _ in range(10):
     done = False
     obs = test_gym.reset()
     while not done:
@@ -78,8 +78,9 @@ out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num'
 for i in range(len(out)):
     print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% \\")
 # %%
-result_plt(title='dqn_Rainbow_ltc')
+result_plt(title='dqn_Rainbow_ltc', time1='2019-12-31', time2=None)
 year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
                      test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
 cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
 print(round(cagr * 100, 3))
+action_result(title='rainbow_ltc2')

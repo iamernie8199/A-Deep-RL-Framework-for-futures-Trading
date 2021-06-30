@@ -2,8 +2,8 @@ import warnings
 
 import pandas as pd
 import ray
-from ray.tune.registry import register_env
 import ray.rllib.agents.dqn as dqn
+from ray.tune.registry import register_env
 
 from env.env_long2 import TradingEnvLong
 from utils import result_plt, year_frac
@@ -14,7 +14,7 @@ warnings.filterwarnings('ignore')
 def create_env(env_kwargs={}):
     data_df = pd.read_csv("data/clean/BTCday.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    train = data_df[(data_df.Date >= '2019-01-01')]
+    train = data_df[(data_df.Date >= '2017-01-01')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, big_point_value=1, cost=0, log=True, **env_kwargs)
@@ -63,19 +63,19 @@ agent.restore(checkpoint_path)
 
 test_gym = create_env()
 out = []
-#%%
-for _ in range(1):
+# %%
+for _ in range(10):
     done = False
     obs = test_gym.reset()
     while not done:
         action = agent.compute_action(obs)
-        #action = 1
+        # action = 1
         obs, reward, done, tmp = test_gym.step(action)
         # test_gym.render()
     out.append(tmp)
 out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
-#%%
-result_plt(title='dqn_Rainbow_btc')
+# %%
+result_plt(title='dqn_Rainbow_btc', time1='2019-12-31', time2=None)
 year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
                      test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
 cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
