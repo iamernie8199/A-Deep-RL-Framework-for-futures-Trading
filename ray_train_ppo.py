@@ -19,8 +19,10 @@ def create_env(env_kwargs={}):
     env = TradingEnvLong(df=train, **env_kwargs)
     return env
 
+
 register_env("TestEnv", create_env)
 ray.init()
+checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000500/checkpoint-500'
 agent = ppo.PPOTrainer(
     env="TestEnv",
     config={
