@@ -23,7 +23,7 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = '/home/sean/ray_results/PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000500/checkpoint-500'
+checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000500/checkpoint-500'
 
 # Restore agent
 agent = ppo.PPOTrainer(
@@ -55,7 +55,7 @@ agent.restore(checkpoint_path)
 test_gym = create_env()
 out = []
 #%%
-for _ in range(9):
+for _ in range(10):
     done = False
     obs = test_gym.reset()
     while not done:
@@ -63,9 +63,9 @@ for _ in range(9):
         obs, reward, done, tmp = test_gym.step(action)
         #test_gym.render()
     out.append(tmp)
-"""out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
+out_df = pd.DataFrame(out, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
 result_plt(title='PPO')
 year_num = year_frac(test_gym.equity_memory['date'].iloc[0],
                      test_gym.equity_memory[test_gym.equity_memory.equity_tmp > 0]['date'].iloc[-1])
 cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
-print(round(cagr * 100, 3))"""
+print(round(cagr * 100, 3))
