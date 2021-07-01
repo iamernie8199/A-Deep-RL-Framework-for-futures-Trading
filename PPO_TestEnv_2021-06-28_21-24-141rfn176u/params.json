@@ -1,0 +1,21 @@
+{
+  "clip_param": 0.2,
+  "env": "TradingEnv",
+  "framework": "tf",
+  "gamma": 0.9,
+  "horizon": 5000,
+  "ignore_worker_failures": true,
+  "kl_coeff": 1.0,
+  "lambda": 0.95,
+  "log_level": "WARN",
+  "lr": 0.0001,
+  "model": {
+    "vf_share_layers": false
+  },
+  "num_gpus": 1,
+  "num_sgd_iter": 20,
+  "num_workers": 10,
+  "sgd_minibatch_size": 32768,
+  "train_batch_size": 320000,
+  "vf_clip_param": 5000.0
+}
