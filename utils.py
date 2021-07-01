@@ -145,6 +145,9 @@ def kalman(ts=None):
 
 
 def expiration_cal(x):
+    settlement = pd.read_csv("data/txf_settlement.csv")
+    settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
+    settlement = settlement.set_index(settlement['txf_settlement'])
     remain = (settlement[x.strftime('%Y-%m')].index - x)[0]
     if remain >= pd.Timedelta("0 days"):
         return remain
@@ -417,9 +420,6 @@ def action_result(title='mc'):
 
 
 if __name__ == "__main__":
-    settlement = pd.read_csv("data/txf_settlement.csv")
-    settlement['txf_settlement'] = pd.to_datetime(settlement['txf_settlement'])
-    settlement = settlement.set_index(settlement['txf_settlement'])
     # dq2()
     df = pd.read_csv("data/clean/WTX&.csv")
     df['Date'] = pd.to_datetime(df['Date'])
