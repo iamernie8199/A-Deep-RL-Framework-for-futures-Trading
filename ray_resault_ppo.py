@@ -23,7 +23,8 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000500/checkpoint-500'
+checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000700/checkpoint-700'
+# 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000500/checkpoint-500'
 
 # Restore agent
 agent = ppo.PPOTrainer(
