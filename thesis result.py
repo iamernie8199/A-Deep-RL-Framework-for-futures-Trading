@@ -89,7 +89,6 @@ def latexsummary(o):
 
 if __name__ == "__main__":
     test_gym = create_env()
-    """
     # random
     out = []
     for _ in range(10):
@@ -369,4 +368,3 @@ if __name__ == "__main__":
     latexsummary(out)
     split_print()
     shutil.move("results_pic", "results/Rainbow")
-    """
