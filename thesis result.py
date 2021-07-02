@@ -9,15 +9,17 @@ from sb3_contrib import QRDQN
 from stable_baselines3 import DQN, PPO
 
 from env.env_long2 import TradingEnvLong
-from utils import random_rollout, result_plt, split_result, year_frac
+from utils import random_rollout, result_plt, split_result, year_frac, action_result
 
 
 def create_env(env_kwargs=None):
     if env_kwargs is None:
         env_kwargs = {}
-    data_df = pd.read_csv("data_simple2.csv")
+    # data_df = pd.read_csv("data_simple2.csv")
+    data_df = pd.read_csv("data_simple2_v2.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    train = data_df[(data_df.Date >= '2000-01-01')]
+    # train = data_df[(data_df.Date >= '2000-01-01')]
+    train = data_df[(data_df.Date >= '2021-03-11')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, log=True, **env_kwargs)
@@ -73,7 +75,7 @@ def split_print(path='results_pic'):
 def latexsummary(o):
     out_df = pd.DataFrame(o, columns=['Net Pnl', 'rtn_on_MDD', 'PF', 'CAGR', 'num', 'winning_rate'])
     for i in range(len(o)):
-        print(f"{i} & {int(out[i][0])} & {out[i][1]} & {out[i][2]} & {out[i][3]}\% & {out[i][4]} & {out[i][5]}\% "
+        print(f"{i} & {int(o[i][0])} & {o[i][1]} & {o[i][2]} & {o[i][3]}\% & {o[i][4]} & {o[i][5]}\% "
               r"\\")
     year_num = year_frac(datetime.strptime("2000-01-01", "%Y-%m-%d"), datetime.strptime("2021-03-11", "%Y-%m-%d"))
     cagr = ((out_df['Net Pnl'].mean() + test_gym.init_equity) / test_gym.init_equity) ** (1 / year_num) - 1
@@ -87,7 +89,7 @@ def latexsummary(o):
 
 if __name__ == "__main__":
     test_gym = create_env()
-
+    """
     # random
     out = []
     for _ in range(10):
@@ -107,10 +109,13 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/BnH")
 
     # sb3 env
-    data_df = pd.read_csv("data_simple.csv")
+    # data_df = pd.read_csv("data_simple.csv")
+    data_df = pd.read_csv("data_simple_v2.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
     env_kwargs = {}
-    e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
+    # e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
+    e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2021-03-11'], log=True, **env_kwargs)
+    
 
     # DQN
     model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
@@ -130,7 +135,8 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/DQN")
 
     # QR-DQN
-    model = QRDQN.load("./logs/qrdqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
+    model = QRDQN.load("./logs/qrdqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/",
+                       device='cuda',
                        gamma=0.9)
     out = []
     for _ in range(10):
@@ -363,3 +369,4 @@ if __name__ == "__main__":
     latexsummary(out)
     split_print()
     shutil.move("results_pic", "results/Rainbow")
+    """
