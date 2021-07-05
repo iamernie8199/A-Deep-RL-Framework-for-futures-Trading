@@ -292,16 +292,16 @@ def split_result(time1="2010-01-01", time2="2020-01-01", path='results_pic'):
     tradelist = glob(f"{path}/trades_list_*.csv")
 
     def cagr_cal(df):
-        if np.sign(df.equity_tmp.values[-1]) == np.sign(df.equity_tmp.values[0]) and df.equity_tmp.values[0] > 0:
-            cagr = df.equity_tmp.values[-1] / df.equity_tmp.values[0]
-        elif df.equity_tmp.values[-1] < 0 and df.equity_tmp.values[0] > 0:
-            cagr = df[df.equity_tmp > 0].equity_tmp.values[-1] / df.equity_tmp.values[0]
-            cagr = cagr ** (1 / year_frac(df.index[0], df[df.equity_tmp > 0].index[-1])) - 1
-            return cagr
+        net = net_cal(df)
+        if net > -1000000:
+            cagr = (net_cal(df) + 1000000) / 1000000
+            cagr = cagr ** (1 / year_frac(df.index[0], df.index[-1])) - 1
         else:
-            cagr = df.equity_tmp.values[-1] - df.equity_tmp.values[0] + np.absolute(df.equity_tmp.values[0])
-            cagr /= np.absolute(df.equity_tmp.values[0])
-        cagr = cagr ** (1 / year_frac(df.index[0], df.index[-1])) - 1
+            init = df.equity_tmp.values[0]
+            df['net'] = df.equity_tmp.apply(lambda x: x - init)
+            df = df[df['net'] > -1000000]
+            cagr = 1 / 1000000
+            cagr = cagr ** (1 / year_frac(df.index[0], df.index[-1])) - 1
         return cagr
 
     def net_cal(df):
