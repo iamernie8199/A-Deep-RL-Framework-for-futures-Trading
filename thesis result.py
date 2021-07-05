@@ -9,7 +9,7 @@ from sb3_contrib import QRDQN
 from stable_baselines3 import DQN, PPO
 
 from env.env_long2 import TradingEnvLong
-from utils import random_rollout, result_plt, split_result, year_frac, action_result
+from utils import random_rollout, result_plt, split_result, year_frac
 
 
 def create_env(env_kwargs=None):
@@ -114,7 +114,6 @@ if __name__ == "__main__":
     env_kwargs = {}
     # e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2000-01-01'], log=True, **env_kwargs)
     e_test_gym = TradingEnvLong(df=data_df[data_df.Date >= '2021-03-11'], log=True, **env_kwargs)
-    
 
     # DQN
     model = DQN.load("./logs/dqn_best_model", env=e_test_gym, tensorboard_log="./trading_2_tensorboard/", device='cuda',
