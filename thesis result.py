@@ -4,6 +4,7 @@ from datetime import datetime
 import pandas as pd
 import ray
 import ray.rllib.agents.dqn as dqn
+import ray.rllib.agents.ppo as ppo
 from ray.tune.registry import register_env
 from sb3_contrib import QRDQN
 from stable_baselines3 import DQN, PPO
@@ -15,11 +16,11 @@ from utils import random_rollout, result_plt, split_result, year_frac
 def create_env(env_kwargs=None):
     if env_kwargs is None:
         env_kwargs = {}
-    # data_df = pd.read_csv("data_simple2.csv")
+    #data_df = pd.read_csv("data_simple2.csv")
     data_df = pd.read_csv("data_simple2_v2.csv")
     data_df['Date'] = pd.to_datetime(data_df['Date'])
-    # train = data_df[(data_df.Date >= '2000-01-01')]
-    train = data_df[(data_df.Date >= '2021-03-11')]
+    train = data_df[(data_df.Date >= '2000-01-01')]
+    #train = data_df[(data_df.Date >= '2021-03-11')]
     # the index needs to start from 0
     train = train.reset_index(drop=True)
     env = TradingEnvLong(df=train, log=True, **env_kwargs)
@@ -367,3 +368,44 @@ if __name__ == "__main__":
     latexsummary(out)
     split_print()
     shutil.move("results_pic", "results/Rainbow")
+
+    # PPO
+    checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000700/checkpoint-700'
+    agent = ppo.PPOTrainer(
+        env="TestEnv",
+        config={
+            "env": "TradingEnv",
+            "log_level": "WARN",
+            "framework": "tf",
+            "ignore_worker_failures": True,
+            "num_gpus": 1,
+            "gamma": 0.9,
+            "lambda": 0.95,
+            "clip_param": 0.2,
+            "kl_coeff": 1.0,
+            "num_sgd_iter": 20,
+            "lr": .0001,
+            "sgd_minibatch_size": 32768,
+            "horizon": 5000,
+            "train_batch_size": 320000,
+            "vf_clip_param": 5000.0,
+            "model": {
+                "vf_share_layers": False,
+            },
+            "num_workers": 2,
+        }
+    )
+    agent.restore(checkpoint_path)
+    out = []
+    for _ in range(10):
+        done = False
+        obs = test_gym.reset()
+        while not done:
+            action = agent.compute_action(obs)
+            obs, reward, done, tmp = test_gym.step(action)
+            # test_gym.render()
+        out.append(tmp)
+    result_plt(title='PPO')
+    latexsummary(out)
+    split_print()
+    shutil.move("results_pic", "results/PPO_ray")
