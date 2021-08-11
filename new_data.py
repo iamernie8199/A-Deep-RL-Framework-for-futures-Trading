@@ -13,7 +13,7 @@ sql = """
 select DISTINCT ON (date) 
 date, open as o, high, low, last as close, vt as volume, oi
 from api_taifex_futures_price 
-where contract='TX' and session='regular' and date>'2021-03-15' and date<='2021-06-20'
+where contract='TX' and session='regular' and date>'2021-03-15'
 order by date desc, contract_month asc
 """
 df = pd.read_sql(sql, conn)
@@ -21,7 +21,7 @@ sql = """
 select DISTINCT ON (date) 
 date, open, high, low
 from api_taifex_futures_price 
-where contract='TX' and session='ah' and date>'2021-03-15' and date<='2021-06-20'
+where contract='TX' and session='ah' and date>'2021-03-15'
 order by date desc, contract_month asc
 """
 df = df.merge(pd.read_sql(sql, conn), how='left', on='date')
