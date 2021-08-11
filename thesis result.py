@@ -172,7 +172,7 @@ if __name__ == "__main__":
     ray.init()
 
     # Double-DQN
-    checkpoint_path = 'DQN_TestEnv_2021-06-18_03-07-18dlvhiswk/checkpoint_001000/checkpoint-1000'
+    checkpoint_path = 'model/DQN_double/checkpoint_001000/checkpoint-1000'
     agent = dqn.DQNTrainer(
         env="TestEnv",
         config={
