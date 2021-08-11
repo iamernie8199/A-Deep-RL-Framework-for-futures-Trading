@@ -254,7 +254,7 @@ class TradingEnvLong(gym.Env):
                                  self.position), self.reward, self.done, out
             else:
                 return np.append(self.observation.iloc[self.current_idx].values,
-                                 self.position), self.reward, self.done, {}
+                                 self.position/self.max_position), self.reward, self.done, {}
         else:
             try:
                 # settlement
@@ -366,7 +366,7 @@ class TradingEnvLong(gym.Env):
             self.current_idx += 1
 
             return np.append(self.observation.iloc[self.current_idx].values,
-                             self.position), self.reward, self.done, {}
+                             self.position/self.max_position), self.reward, self.done, {}
 
     def _make_plot(self):
         self.equity_memory.set_index(['date'])['equity_tmp'].plot.line(legend=True)
