@@ -370,7 +370,7 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/Rainbow")
 
     # PPO
-    checkpoint_path = 'PPO_TestEnv_2021-06-28_21-24-141rfn176u/checkpoint_000700/checkpoint-700'
+    checkpoint_path = 'PPO/checkpoint_000700/checkpoint-700'
     agent = ppo.PPOTrainer(
         env="TestEnv",
         config={
