@@ -23,7 +23,7 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = 'DQN_TestEnv_2021-06-18_04-44-503upfoi0h/checkpoint_002000/checkpoint-2000'
+checkpoint_path = 'model/DQN_dueling/checkpoint_002000/checkpoint-2000'
 
 # Restore agent
 agent = dqn.DQNTrainer(

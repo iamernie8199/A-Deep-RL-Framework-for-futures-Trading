@@ -222,7 +222,7 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/Double-DQN")
 
     # Dueling-DQN
-    checkpoint_path = 'DQN_TestEnv_2021-06-18_04-44-503upfoi0h/checkpoint_002000/checkpoint-2000'
+    checkpoint_path = 'model/DQN_dueling/checkpoint_002000/checkpoint-2000'
     agent = dqn.DQNTrainer(
         env="TestEnv",
         config={
