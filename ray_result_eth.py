@@ -23,9 +23,8 @@ def create_env(env_kwargs={}):
 
 register_env("TestEnv", create_env)
 ray.init()
-checkpoint_path = 'DQN_trainEnv_2021-06-16_03-06-12lbhm2aw3/checkpoint_004500/checkpoint-4500'
-# '/home/sean/ray_results/DQN_trainEnv_2021-06-16_03-06-12lbhm2aw3/checkpoint_004500/checkpoint-4500'
-# '/home/sean/ray_results/DQN_trainEnv_2021-06-15_21-23-183tf_lf8i/checkpoint_001500/checkpoint-1500'
+checkpoint_path = 'model/discard/rainbow_eth/checkpoint_004500/checkpoint-4500'
+# '/home/sean/ray_results/rainbow_eth/checkpoint_004500/checkpoint-4500'
 
 # Restore agent
 agent = dqn.DQNTrainer(
