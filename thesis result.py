@@ -322,7 +322,7 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/Noisy-DQN")
 
     # Rainbow-DQN
-    checkpoint_path = 'DQN_TestEnv_2021-06-14_19-46-29sztcqos3/checkpoint_001410/checkpoint-1410'
+    checkpoint_path = 'model/Rainbow/checkpoint_001410/checkpoint-1410'
     agent = dqn.DQNTrainer(
         env="TestEnv",
         config={
