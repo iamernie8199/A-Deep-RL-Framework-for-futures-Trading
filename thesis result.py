@@ -272,7 +272,7 @@ if __name__ == "__main__":
     shutil.move("results_pic", "results/Dueling-DQN")
 
     # Noisy-DQN
-    checkpoint_path = 'DQN_TestEnv_2021-06-18_15-33-25_c944tj8/checkpoint_000500/checkpoint-500'
+    checkpoint_path = 'model/DQN_noisy/checkpoint_000500/checkpoint-500'
     agent = dqn.DQNTrainer(
         env="TestEnv",
         config={
