@@ -4,7 +4,7 @@ import shutil
 from utils import action_result
 
 model = 'ppo_ray'
-mc_path = 'mc/ppo_ray.csv'
+mc_path = f'mc/{model}.csv'
 
 action_result(title=model)
 mc_df = pd.read_csv(mc_path)
