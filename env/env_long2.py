@@ -167,7 +167,7 @@ class TradingEnvLong(gym.Env):
             self.commission_cost(contracts, price)
             # Close out of long position
             if self.position == 0:
-                profit = -(self.points * self.big_point_value)
+                profit = -(self.points / self.min_movement_point * self.big_point_value)
                 self.equity += profit
                 self.points = 0
                 self._entryprice = None
