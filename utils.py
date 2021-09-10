@@ -455,3 +455,6 @@ if __name__ == "__main__":
     # df['kalman_log_rtn2'] = kalman(df.log_rtn).round(5)
     # df.rename(columns={"Date": "Timestamp"})
     df.to_csv("data_simple2.csv", index=False)
+    corr = df.drop(columns=['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'OI']).corr()
+    ax = sns.heatmap(corr)
+    plt.show()
