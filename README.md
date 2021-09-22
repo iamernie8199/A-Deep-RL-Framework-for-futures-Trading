@@ -60,3 +60,6 @@ https://towardsdatascience.com/deep-reinforcement-learning-for-automated-stock-t
 
 ## todo
 - use [Dask df](https://examples.dask.org/dataframe.html) to improve speed
+
+## note
+pip install numpy==1.19.5
