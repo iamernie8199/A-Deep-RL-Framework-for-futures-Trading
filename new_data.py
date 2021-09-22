@@ -51,7 +51,7 @@ df = norm_ohlc(df)  # normalized ohlc
 
 # hurst
 # 2Q/3Q/4Q
-df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x)).round(1)
+# df['hurst_120'] = df['Close'].rolling(120).apply(lambda x: hurst(x)).round(1)
 
 df['log_rtn'] = np.log(df['Close']).diff(1).round(5)
 # kalman filter
